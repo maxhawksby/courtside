@@ -1,0 +1,19 @@
+{
+  "name": "courtside",
+  "version": "0.0.1",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "mobile": "npm run start --workspace apps/mobile",
+    "admin": "npm run dev --workspace apps/admin",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
+  },
+  "devDependencies": {
+    "supabase": "^2",
+    "typescript": "^5"
+  }
+}
