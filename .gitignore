@@ -1,0 +1,45 @@
+# deps
+node_modules/
+.pnpm-store/
+
+# expo / react native
+.expo/
+dist/
+web-build/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+ios/
+android/
+
+# eas / builds
+*.ipa
+*.apk
+*.aab
+eas-build-*/
+
+# next.js (admin console)
+.next/
+out/
+
+# supabase local
+supabase/.branches/
+supabase/.temp/
+supabase/.env
+
+# env & secrets — never commit credentials
+.env
+.env.*
+!.env.example
+
+# testing / tooling
+coverage/
+.turbo/
+*.tsbuildinfo
+
+# os / editor
+.DS_Store
+Thumbs.db
