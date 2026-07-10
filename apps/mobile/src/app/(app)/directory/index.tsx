@@ -95,11 +95,6 @@ export default function DirectoryIndexScreen() {
       <Stack.Screen
         options={{
           title: 'Directory',
-          headerLeft: () => (
-            <Pressable onPress={() => router.push('/households')} hitSlop={8}>
-              <ThemedText type="linkPrimary">Households</ThemedText>
-            </Pressable>
-          ),
           headerRight: () => (
             <Pressable onPress={() => router.push('/directory/new')} hitSlop={8}>
               <ThemedText type="linkPrimary">Add person</ThemedText>
@@ -124,6 +119,14 @@ export default function DirectoryIndexScreen() {
 
       <View style={styles.filterRow}>
         <SegmentedControl options={FILTER_OPTIONS} value={filter} onChange={setFilter} />
+        <Pressable
+          onPress={() => router.push('/households')}
+          hitSlop={8}
+          style={[styles.householdsButton, { backgroundColor: theme.backgroundElement }]}>
+          <ThemedText type="small" themeColor="textSecondary">
+            Households →
+          </ThemedText>
+        </Pressable>
       </View>
 
       {error ? (
@@ -188,7 +191,15 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.three,
   },
   filterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: Spacing.three,
+  },
+  householdsButton: {
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    borderRadius: Spacing.two,
   },
   listContent: {
     paddingBottom: Spacing.six,

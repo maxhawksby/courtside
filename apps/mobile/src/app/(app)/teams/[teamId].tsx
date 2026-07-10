@@ -1,6 +1,6 @@
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -13,7 +13,9 @@ import { RosterRow } from '@/features/teams/components/roster-row';
 import {
   createSeason,
   createTeamSeason,
+  deleteTeam,
   getRoster,
+  listMyRoles,
   listSeasons,
   listTeams,
   listTeamSeasons,
@@ -26,6 +28,7 @@ const DEFAULT_SEASON_NAME = '2026-27';
 
 export default function TeamDetailScreen() {
   const { teamId } = useLocalSearchParams<{ teamId: string }>();
+  const router = useRouter();
   const { activeOrg } = useOrg();
 
   const [team, setTeam] = useState<TeamWithDivision | null>(null);
@@ -34,13 +37,21 @@ export default function TeamDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddPanel, setShowAddPanel] = useState(false);
+  // UI gate only — RLS `teams_write` is the real check on delete.
+  const [canManageTeam, setCanManageTeam] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!activeOrg || !teamId) return;
     setLoading(true);
     setError(null);
     try {
-      const teams = await listTeams(activeOrg.id);
+      const [teams, myRoles] = await Promise.all([
+        listTeams(activeOrg.id),
+        listMyRoles(activeOrg.id),
+      ]);
+      setCanManageTeam(myRoles.some((r) => r.role === 'owner' || r.role === 'division_admin'));
       const found = teams.find((t) => t.id === teamId) ?? null;
       setTeam(found);
       if (!found) {
@@ -92,6 +103,31 @@ export default function TeamDetailScreen() {
     setRoster(rows);
     setShowAddPanel(false);
   }, [teamSeasonId]);
+
+  const doDelete = useCallback(async () => {
+    if (!teamId) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteTeam(teamId);
+      router.back(); // Teams list reloads on focus.
+    } catch (e) {
+      setDeleteError(e instanceof Error ? e.message : 'Could not delete team');
+      setDeleting(false);
+    }
+  }, [teamId, router]);
+
+  const handleDelete = useCallback(() => {
+    if (!team) return;
+    Alert.alert(
+      'Delete team',
+      `Permanently delete ${team.name}? This also removes its seasons, rosters, schedule, games, and team chat history. This can't be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: () => void doDelete() },
+      ],
+    );
+  }, [team, doDelete]);
 
   if (!activeOrg) {
     return (
@@ -161,6 +197,25 @@ export default function TeamDetailScreen() {
             />
           )}
         </View>
+
+        {canManageTeam && (
+          <View style={styles.dangerSection}>
+            <Pressable onPress={handleDelete} disabled={deleting} hitSlop={8}>
+              {deleting ? (
+                <ActivityIndicator />
+              ) : (
+                <ThemedText type="small" style={styles.deleteText}>
+                  Delete team
+                </ThemedText>
+              )}
+            </Pressable>
+            {deleteError ? (
+              <ThemedText type="small" themeColor="textSecondary">
+                {deleteError}
+              </ThemedText>
+            ) : null}
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -187,6 +242,15 @@ const styles = StyleSheet.create({
   },
   rosterRows: {
     gap: Spacing.two,
+  },
+  dangerSection: {
+    alignItems: 'center',
+    gap: Spacing.two,
+    marginTop: Spacing.four,
+  },
+  deleteText: {
+    color: '#d92c2c',
+    fontWeight: '600',
   },
   centered: {
     flex: 1,
