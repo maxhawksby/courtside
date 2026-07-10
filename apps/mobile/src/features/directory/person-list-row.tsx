@@ -1,5 +1,5 @@
-import { Pressable, StyleSheet } from 'react-native';
-import type { PersonRow } from '@courtside/shared';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { ageFromDateOfBirth, isMinor, type PersonRow } from '@courtside/shared';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -12,14 +12,23 @@ type PersonListRowProps = {
 
 export function PersonListRow({ person, onPress }: PersonListRowProps) {
   const hint = person.email ?? person.phone ?? null;
+  const minor = isMinor(person.date_of_birth);
+  const age = ageFromDateOfBirth(person.date_of_birth);
 
   return (
     <Pressable onPress={onPress} hitSlop={4}>
       {({ pressed }) => (
         <ThemedView type="backgroundElement" style={[styles.row, pressed && styles.pressed]}>
-          <ThemedText>
-            {person.first_name} {person.last_name}
-          </ThemedText>
+          <View style={styles.nameRow}>
+            <ThemedText>
+              {person.first_name} {person.last_name}
+            </ThemedText>
+            {minor ? (
+              <ThemedView type="backgroundSelected" style={styles.chip}>
+                <ThemedText type="small">Minor{age != null ? ` · ${age}` : ''}</ThemedText>
+              </ThemedView>
+            ) : null}
+          </View>
           {hint ? (
             <ThemedText type="small" themeColor="textSecondary">
               {hint}
@@ -41,5 +50,15 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.7,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  chip: {
+    borderRadius: Spacing.two,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.half,
   },
 });

@@ -14,11 +14,13 @@ type PersonPickerProps = {
   orgId: string;
   /** Person to exclude from results (e.g. the person you're linking against). */
   excludePersonId?: string;
+  /** Additional person ids to exclude from results (e.g. existing household members). */
+  excludeIds?: string[];
   onSelect: (person: PersonRow) => void;
 };
 
 /** Search-existing-or-quick-create picker used by the link-guardian flow. */
-export function PersonPicker({ orgId, excludePersonId, onSelect }: PersonPickerProps) {
+export function PersonPicker({ orgId, excludePersonId, excludeIds, onSelect }: PersonPickerProps) {
   const theme = useTheme();
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebouncedValue(query, 300);
@@ -31,6 +33,10 @@ export function PersonPicker({ orgId, excludePersonId, onSelect }: PersonPickerP
   const [lastName, setLastName] = useState('');
   const [creating, setCreating] = useState(false);
 
+  // Join to a stable string key: callers may pass a freshly-derived array each
+  // render, and we only want to re-fetch when the actual id set changes.
+  const excludeIdsKey = (excludeIds ?? []).join(',');
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -38,7 +44,9 @@ export function PersonPicker({ orgId, excludePersonId, onSelect }: PersonPickerP
     listPersons(orgId, debouncedQuery)
       .then((rows) => {
         if (cancelled) return;
-        setResults(rows.filter((p) => p.id !== excludePersonId));
+        const excluded = new Set(excludeIdsKey ? excludeIdsKey.split(',') : []);
+        if (excludePersonId) excluded.add(excludePersonId);
+        setResults(rows.filter((p) => !excluded.has(p.id)));
       })
       .catch((e) => {
         if (!cancelled) setError(e instanceof Error ? e.message : 'Search failed');
@@ -49,7 +57,7 @@ export function PersonPicker({ orgId, excludePersonId, onSelect }: PersonPickerP
     return () => {
       cancelled = true;
     };
-  }, [orgId, debouncedQuery, excludePersonId]);
+  }, [orgId, debouncedQuery, excludePersonId, excludeIdsKey]);
 
   const handleQuickCreate = async () => {
     if (!firstName.trim() || !lastName.trim()) return;

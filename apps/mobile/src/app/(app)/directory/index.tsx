@@ -1,10 +1,11 @@
-import { useCallback, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, TextInput } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
-import type { PersonRow } from '@courtside/shared';
+import { isMinor, type PersonRow } from '@courtside/shared';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { SegmentedControl } from '@/components/ui/segmented-control';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { listPersons } from '@/lib/data';
@@ -13,6 +14,14 @@ import { useOrg } from '@/lib/org-context';
 import { EmptyState } from '@/features/directory/empty-state';
 import { PersonListRow } from '@/features/directory/person-list-row';
 import { useDebouncedValue } from '@/features/directory/use-debounced-value';
+
+type PersonFilter = 'all' | 'players' | 'adults';
+
+const FILTER_OPTIONS: { value: PersonFilter; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'players', label: 'Players' },
+  { value: 'adults', label: 'Adults' },
+];
 
 export default function DirectoryIndexScreen() {
   const router = useRouter();
@@ -24,6 +33,7 @@ export default function DirectoryIndexScreen() {
   const [persons, setPersons] = useState<PersonRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<PersonFilter>('all');
 
   const load = useCallback(async () => {
     if (!activeOrg) return;
@@ -71,11 +81,25 @@ export default function DirectoryIndexScreen() {
 
   const trimmedQuery = debouncedQuery.trim();
 
+  const filteredPersons = useMemo(() => {
+    if (filter === 'all') return persons;
+    return persons.filter((person) =>
+      filter === 'players' ? isMinor(person.date_of_birth) : !isMinor(person.date_of_birth),
+    );
+  }, [persons, filter]);
+
+  const filterLabel = filter === 'players' ? 'players' : filter === 'adults' ? 'adults' : 'people';
+
   return (
     <ThemedView style={styles.container}>
       <Stack.Screen
         options={{
           title: 'Directory',
+          headerLeft: () => (
+            <Pressable onPress={() => router.push('/households')} hitSlop={8}>
+              <ThemedText type="linkPrimary">Households</ThemedText>
+            </Pressable>
+          ),
           headerRight: () => (
             <Pressable onPress={() => router.push('/directory/new')} hitSlop={8}>
               <ThemedText type="linkPrimary">Add person</ThemedText>
@@ -98,6 +122,10 @@ export default function DirectoryIndexScreen() {
         clearButtonMode="while-editing"
       />
 
+      <View style={styles.filterRow}>
+        <SegmentedControl options={FILTER_OPTIONS} value={filter} onChange={setFilter} />
+      </View>
+
       {error ? (
         <ThemedView style={styles.centered}>
           <ThemedText themeColor="textSecondary">{error}</ThemedText>
@@ -117,9 +145,14 @@ export default function DirectoryIndexScreen() {
             onAction={() => router.push('/directory/new')}
           />
         )
+      ) : filteredPersons.length === 0 ? (
+        <EmptyState
+          title="No matches"
+          subtitle={`No ${filterLabel} found${trimmedQuery ? ` for "${trimmedQuery}"` : ''}.`}
+        />
       ) : (
         <FlatList
-          data={persons}
+          data={filteredPersons}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
           renderItem={({ item }) => (
@@ -152,6 +185,9 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
     fontSize: 16,
+    marginBottom: Spacing.three,
+  },
+  filterRow: {
     marginBottom: Spacing.three,
   },
   listContent: {
