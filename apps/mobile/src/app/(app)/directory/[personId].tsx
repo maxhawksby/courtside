@@ -1,29 +1,39 @@
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet } from 'react-native';
-import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import type { PersonRow } from '@courtside/shared';
+import { ScrollView, StyleSheet } from 'react-native';
+import { Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { isMinor } from '@courtside/shared';
+import type { PersonRow, PersonSensitiveRow } from '@courtside/shared';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { getPerson, listGuardianshipsFor, type GuardianshipWithPersons } from '@/lib/data';
+import {
+  getEffectiveConsent,
+  getMyProfile,
+  getPerson,
+  getSensitive,
+  listGuardianshipsFor,
+  type GuardianshipWithPersons,
+} from '@/lib/data';
 import { useOrg } from '@/lib/org-context';
 
-import { InviteParentSheet } from '@/features/directory/invite-parent-sheet';
-import { LinkGuardianSheet } from '@/features/directory/link-guardian-sheet';
+import { GuardiansSection } from '@/features/directory/person-detail/guardians-section';
+import { MediaConsentSection } from '@/features/directory/person-detail/media-consent-section';
+import { PersonHeader } from '@/features/directory/person-detail/person-header';
+import { SensitiveSection } from '@/features/directory/person-detail/sensitive-section';
 
 export default function PersonDetailScreen() {
   const params = useLocalSearchParams<{ personId: string }>();
   const personId = Array.isArray(params.personId) ? params.personId[0] : params.personId;
-  const router = useRouter();
   const { activeOrg } = useOrg();
 
   const [person, setPerson] = useState<PersonRow | null>(null);
   const [relationships, setRelationships] = useState<GuardianshipWithPersons[]>([]);
+  const [consent, setEffectiveConsent] = useState(false);
+  const [sensitive, setSensitive] = useState<PersonSensitiveRow | null>(null);
+  const [canStartSensitive, setCanStartSensitive] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [linkVisible, setLinkVisible] = useState(false);
-  const [inviteVisible, setInviteVisible] = useState(false);
 
   const load = useCallback(async () => {
     if (!personId) return;
@@ -36,14 +46,49 @@ export default function PersonDetailScreen() {
       ]);
       setPerson(personRow);
       setRelationships(rels);
+
+      // Media consent only applies to minors; canRenderMedia treats adults
+      // as always renderable regardless of this value.
+      setEffectiveConsent(isMinor(personRow.date_of_birth) ? await getEffectiveConsent(personId) : false);
+
+      // Sensitive info fails closed: getSensitive's contract treats "no
+      // record yet" and "RLS is hiding it" identically (both resolve to
+      // null), and any read error is caught here too. Either way we hide the
+      // section rather than show an editable form or an error state that
+      // would confirm to an unauthorized viewer that it exists for this
+      // person's child.
+      try {
+        setSensitive(await getSensitive(personId));
+      } catch {
+        setSensitive(null);
+      }
+
+      // With no row yet, a viewer we can locally establish as entitled — the
+      // person themself or one of their guardians — still gets the section in
+      // create mode (an empty form reveals nothing; RLS re-checks the write).
+      // Anyone else keeps seeing nothing, preserving fail-closed.
+      try {
+        const me = await getMyProfile(activeOrg?.id ?? '');
+        const myPersonId = me?.person_id ?? null;
+        setCanStartSensitive(
+          myPersonId != null &&
+            (myPersonId === personId ||
+              rels.some(
+                (g) => g.player_person_id === personId && g.guardian_person_id === myPersonId,
+              )),
+        );
+      } catch {
+        setCanStartSensitive(false);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load person');
     } finally {
       setLoading(false);
     }
-  }, [personId]);
+  }, [personId, activeOrg?.id]);
 
-  // Focus-based reload: guardian links created on pushed screens appear on return.
+  // Focus-based reload: guardian links, consent changes, and sensitive-info
+  // edits made on this screen or pushed screens appear on return.
   useFocusEffect(
     useCallback(() => {
       void load();
@@ -77,111 +122,40 @@ export default function PersonDetailScreen() {
     );
   }
 
-  const guardians = relationships.filter(
-    (r) => r.player_person_id === person.id && r.guardian,
-  );
-  const players = relationships.filter(
-    (r) => r.guardian_person_id === person.id && r.player,
-  );
+  const minor = isMinor(person.date_of_birth);
 
   return (
     <ThemedView style={styles.container}>
       <Stack.Screen options={{ title: `${person.first_name} ${person.last_name}` }} />
       <ScrollView contentContainerStyle={styles.content}>
-        <ThemedView type="backgroundElement" style={styles.headerCard}>
-          <ThemedText type="subtitle">
-            {person.first_name} {person.last_name}
-          </ThemedText>
-          {person.email ? (
-            <ThemedText themeColor="textSecondary">{person.email}</ThemedText>
-          ) : null}
-          {person.phone ? (
-            <ThemedText themeColor="textSecondary">{person.phone}</ThemedText>
-          ) : null}
-          {person.date_of_birth ? (
-            <ThemedText themeColor="textSecondary">DOB: {person.date_of_birth}</ThemedText>
-          ) : null}
-        </ThemedView>
+        <PersonHeader person={person} consent={consent} />
 
-        <ThemedView style={styles.actionsRow}>
-          <Pressable onPress={() => setLinkVisible(true)} hitSlop={4}>
-            <ThemedText type="linkPrimary">Link guardian</ThemedText>
-          </Pressable>
-          <Pressable onPress={() => setInviteVisible(true)} hitSlop={4}>
-            <ThemedText type="linkPrimary">Invite as parent</ThemedText>
-          </Pressable>
-        </ThemedView>
+        <GuardiansSection
+          orgId={activeOrg.id}
+          orgName={activeOrg.name}
+          person={{ id: person.id, email: person.email }}
+          relationships={relationships}
+          onChanged={load}
+        />
 
-        <ThemedView style={styles.section}>
-          <ThemedText type="smallBold">Guardians</ThemedText>
-          {guardians.length === 0 ? (
-            <ThemedText type="small" themeColor="textSecondary">
-              No guardians linked yet.
-            </ThemedText>
-          ) : (
-            guardians.map((r) => (
-              <Pressable
-                key={r.id}
-                onPress={() => router.push(`/directory/${r.guardian!.id}`)}
-                hitSlop={4}>
-                <ThemedView type="backgroundElement" style={styles.relRow}>
-                  <ThemedText>
-                    {r.guardian!.first_name} {r.guardian!.last_name}
-                  </ThemedText>
-                  {r.relationship ? (
-                    <ThemedText type="small" themeColor="textSecondary">
-                      {r.relationship}
-                    </ThemedText>
-                  ) : null}
-                </ThemedView>
-              </Pressable>
-            ))
-          )}
-        </ThemedView>
+        {minor ? (
+          <MediaConsentSection
+            orgId={activeOrg.id}
+            playerPersonId={person.id}
+            consent={consent}
+            onConsentChange={setEffectiveConsent}
+          />
+        ) : null}
 
-        <ThemedView style={styles.section}>
-          <ThemedText type="smallBold">Players</ThemedText>
-          {players.length === 0 ? (
-            <ThemedText type="small" themeColor="textSecondary">
-              Not a guardian of anyone yet.
-            </ThemedText>
-          ) : (
-            players.map((r) => (
-              <Pressable
-                key={r.id}
-                onPress={() => router.push(`/directory/${r.player!.id}`)}
-                hitSlop={4}>
-                <ThemedView type="backgroundElement" style={styles.relRow}>
-                  <ThemedText>
-                    {r.player!.first_name} {r.player!.last_name}
-                  </ThemedText>
-                  {r.relationship ? (
-                    <ThemedText type="small" themeColor="textSecondary">
-                      {r.relationship}
-                    </ThemedText>
-                  ) : null}
-                </ThemedView>
-              </Pressable>
-            ))
-          )}
-        </ThemedView>
+        {sensitive || canStartSensitive ? (
+          <SensitiveSection
+            orgId={activeOrg.id}
+            personId={person.id}
+            sensitive={sensitive}
+            onSaved={setSensitive}
+          />
+        ) : null}
       </ScrollView>
-
-      <LinkGuardianSheet
-        visible={linkVisible}
-        onClose={() => setLinkVisible(false)}
-        orgId={activeOrg.id}
-        playerPersonId={person.id}
-        onLinked={load}
-      />
-      <InviteParentSheet
-        visible={inviteVisible}
-        onClose={() => setInviteVisible(false)}
-        orgId={activeOrg.id}
-        orgName={activeOrg.name}
-        personId={person.id}
-        defaultEmail={person.email}
-      />
     </ThemedView>
   );
 }
@@ -199,23 +173,5 @@ const styles = StyleSheet.create({
   content: {
     padding: Spacing.four,
     gap: Spacing.four,
-  },
-  headerCard: {
-    borderRadius: Spacing.three,
-    padding: Spacing.four,
-    gap: Spacing.half,
-  },
-  actionsRow: {
-    flexDirection: 'row',
-    gap: Spacing.four,
-  },
-  section: {
-    gap: Spacing.two,
-  },
-  relRow: {
-    borderRadius: Spacing.two,
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.three,
-    gap: Spacing.half,
   },
 });
