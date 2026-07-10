@@ -1,5 +1,5 @@
 import { StyleSheet, View } from 'react-native';
-import { ageFromDateOfBirth, isMinor } from '@courtside/shared';
+import { ageFromDateOfBirth, isMinor, PLAYER_LOGIN_MIN_AGE } from '@courtside/shared';
 import type { PersonRow } from '@courtside/shared';
 
 import { ThemedText } from '@/components/themed-text';
@@ -54,7 +54,9 @@ export function PersonHeader({ person, consent }: PersonHeaderProps) {
 
       {minor ? (
         <ThemedText type="small" themeColor="textSecondary">
-          Managed by guardians — players under 13 never have app logins.
+          {(ageFromDateOfBirth(person.date_of_birth) ?? 0) < PLAYER_LOGIN_MIN_AGE
+            ? 'Managed by guardians — players under 13 never have app logins.'
+            : 'Managed with guardian oversight.'}
         </ThemedText>
       ) : null}
     </ThemedView>

@@ -15,20 +15,22 @@ type SensitiveSectionProps = {
   orgId: string;
   personId: string;
   /**
-   * The parent screen only mounts this component once getSensitive has
-   * already resolved to a real row — never render this against a null/error
-   * result (docs/COMPLIANCE.md: sensitive data fails closed).
+   * The parent screen mounts this either with an existing row, or with null
+   * ONLY when it has locally established the viewer as the person themself
+   * or a guardian (create mode — an empty form reveals nothing, and RLS
+   * still decides the write). Never mount it for anyone else
+   * (docs/COMPLIANCE.md: sensitive data fails closed).
    */
-  sensitive: PersonSensitiveRow;
+  sensitive: PersonSensitiveRow | null;
   onSaved: (row: PersonSensitiveRow) => void;
 };
 
 /** Medical notes + emergency contact, editable, saved via upsertSensitive. */
 export function SensitiveSection({ orgId, personId, sensitive, onSaved }: SensitiveSectionProps) {
   const theme = useTheme();
-  const existingContact = (sensitive.emergency_contact ?? {}) as EmergencyContact;
+  const existingContact = (sensitive?.emergency_contact ?? {}) as EmergencyContact;
 
-  const [medicalNotes, setMedicalNotes] = useState(sensitive.medical_notes ?? '');
+  const [medicalNotes, setMedicalNotes] = useState(sensitive?.medical_notes ?? '');
   const [contactName, setContactName] = useState(existingContact.name ?? '');
   const [contactPhone, setContactPhone] = useState(existingContact.phone ?? '');
   const [saving, setSaving] = useState(false);

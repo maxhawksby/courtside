@@ -9,6 +9,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import {
   getEffectiveConsent,
+  getMyProfile,
   getPerson,
   getSensitive,
   listGuardianshipsFor,
@@ -30,6 +31,7 @@ export default function PersonDetailScreen() {
   const [relationships, setRelationships] = useState<GuardianshipWithPersons[]>([]);
   const [consent, setEffectiveConsent] = useState(false);
   const [sensitive, setSensitive] = useState<PersonSensitiveRow | null>(null);
+  const [canStartSensitive, setCanStartSensitive] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,12 +62,30 @@ export default function PersonDetailScreen() {
       } catch {
         setSensitive(null);
       }
+
+      // With no row yet, a viewer we can locally establish as entitled — the
+      // person themself or one of their guardians — still gets the section in
+      // create mode (an empty form reveals nothing; RLS re-checks the write).
+      // Anyone else keeps seeing nothing, preserving fail-closed.
+      try {
+        const me = await getMyProfile(activeOrg?.id ?? '');
+        const myPersonId = me?.person_id ?? null;
+        setCanStartSensitive(
+          myPersonId != null &&
+            (myPersonId === personId ||
+              rels.some(
+                (g) => g.player_person_id === personId && g.guardian_person_id === myPersonId,
+              )),
+        );
+      } catch {
+        setCanStartSensitive(false);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load person');
     } finally {
       setLoading(false);
     }
-  }, [personId]);
+  }, [personId, activeOrg?.id]);
 
   // Focus-based reload: guardian links, consent changes, and sensitive-info
   // edits made on this screen or pushed screens appear on return.
@@ -127,7 +147,7 @@ export default function PersonDetailScreen() {
           />
         ) : null}
 
-        {sensitive ? (
+        {sensitive || canStartSensitive ? (
           <SensitiveSection
             orgId={activeOrg.id}
             personId={person.id}
