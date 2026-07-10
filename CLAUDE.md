@@ -10,6 +10,7 @@ coaches), divisions, teams, and season rosters.
 - `docs/BRIEF.md` — product brief (what & why, feature scope, differentiator)
 - `docs/ARCHITECTURE.md` — stack, data model, offline sync, RLS strategy
 - `docs/ROADMAP.md` — phases 0–6 with milestones and exit criteria
+- `docs/LAUNCH-PLAN.md` — approved week-by-week execution plan to public launch (Oct 2026)
 - `docs/COMPLIANCE.md` — trademark/IP guardrails, COPPA (2025 amendments), SafeSport MAAPP,
   store requirements. **Read before touching auth, messaging, media, or minors' data.**
 - `docs/CLIENT-KICKOFF.md` — the client's critical-path checklist (D-U-N-S, store enrollments)

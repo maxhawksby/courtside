@@ -4,6 +4,9 @@
 Total ≈ 26–34 units ≈ 6–8 calendar months to full scope. Every phase ends with something
 the client can touch on his own phone.
 
+> **Execution plan to launch:** `docs/LAUNCH-PLAN.md` (approved 2026-07-10) sequences the
+> remaining work week by week through Phase 3 — target: live on both stores Oct 5–16, 2026.
+
 ## Phase 0 — Foundations & store unblocking (2u) — IN PROGRESS
 
 **Client critical path (started day 1 — longest lead times in the project):**

@@ -43,3 +43,6 @@ coverage/
 # os / editor
 .DS_Store
 Thumbs.db
+
+# claude code — personal local settings
+.claude/settings.local.json
