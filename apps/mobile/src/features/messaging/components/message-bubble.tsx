@@ -1,0 +1,100 @@
+import { Pressable, StyleSheet, View } from 'react-native';
+import type { MessageRow } from '@courtside/shared';
+
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { Spacing } from '@/constants/theme';
+
+import { Badge } from './badge';
+
+function formatTime(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+}
+
+type MessageBubbleProps = {
+  message: MessageRow;
+  own: boolean;
+  senderName: string;
+  /** Long-press to soft-delete — only wired for the sender's own, non-deleted messages. */
+  onLongPress?: () => void;
+};
+
+export function MessageBubble({ message, own, senderName, onLongPress }: MessageBubbleProps) {
+  const deleted = message.deleted_at != null;
+
+  return (
+    <View style={[styles.row, own ? styles.rowOwn : styles.rowOther]}>
+      {!own && (
+        <ThemedText type="small" themeColor="textSecondary" style={styles.senderName}>
+          {senderName}
+        </ThemedText>
+      )}
+      <Pressable
+        onLongPress={own && !deleted ? onLongPress : undefined}
+        disabled={!own || deleted}>
+        <ThemedView
+          type={own ? 'backgroundSelected' : 'backgroundElement'}
+          style={[styles.bubble, own ? styles.bubbleOwn : styles.bubbleOther]}>
+          {deleted ? (
+            <ThemedText type="small" themeColor="textSecondary" style={styles.tombstone}>
+              Message deleted
+            </ThemedText>
+          ) : (
+            <ThemedText>{message.body}</ThemedText>
+          )}
+          {message.out_of_hours ? (
+            <View style={styles.chipRow}>
+              <Badge label="After hours" />
+            </View>
+          ) : null}
+        </ThemedView>
+      </Pressable>
+      <ThemedText type="small" themeColor="textSecondary" style={styles.timestamp}>
+        {formatTime(message.created_at)}
+      </ThemedText>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  row: {
+    marginBottom: Spacing.three,
+    maxWidth: '80%',
+  },
+  rowOwn: {
+    alignSelf: 'flex-end',
+    alignItems: 'flex-end',
+  },
+  rowOther: {
+    alignSelf: 'flex-start',
+    alignItems: 'flex-start',
+  },
+  senderName: {
+    marginBottom: Spacing.half,
+    marginHorizontal: Spacing.one,
+  },
+  bubble: {
+    borderRadius: Spacing.three,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+  },
+  bubbleOwn: {
+    borderBottomRightRadius: Spacing.half,
+  },
+  bubbleOther: {
+    borderBottomLeftRadius: Spacing.half,
+  },
+  tombstone: {
+    fontStyle: 'italic',
+  },
+  chipRow: {
+    marginTop: Spacing.one,
+    flexDirection: 'row',
+  },
+  timestamp: {
+    marginTop: Spacing.half,
+    marginHorizontal: Spacing.one,
+  },
+});
