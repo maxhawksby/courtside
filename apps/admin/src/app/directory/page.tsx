@@ -55,7 +55,7 @@ export default function DirectoryPage() {
         />
       </div>
 
-      {error && <p className="text-sm text-red-600">Couldn&apos;t load the directory: {error}</p>}
+      {error && <p className="text-sm text-danger">Couldn&apos;t load the directory: {error}</p>}
 
       {!error && loading && <p className="text-secondary">Loading…</p>}
 

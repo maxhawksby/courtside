@@ -93,7 +93,7 @@ export default function EventsPage() {
         </select>
       </div>
 
-      {eventsError && <p className="text-sm text-red-600">Couldn&apos;t load events: {eventsError}</p>}
+      {eventsError && <p className="text-sm text-danger">Couldn&apos;t load events: {eventsError}</p>}
 
       {!eventsError && eventsLoading && <p className="text-secondary">Loading…</p>}
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getRoster, listSeasons, listTeams, listTeamSeasons } from '@/lib/data';
 import type { RosterEntry, TeamWithDivision } from '@/lib/data';
 import { useStoredOrg } from '../components/org-storage';
@@ -20,6 +20,7 @@ export default function TeamsPage() {
   const [teamsError, setTeamsError] = useState<string | null>(null);
 
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const rosterRequestRef = useRef<string | null>(null);
   const [roster, setRoster] = useState<RosterEntry[]>([]);
   const [rosterLoading, setRosterLoading] = useState(false);
   const [rosterError, setRosterError] = useState<string | null>(null);
@@ -52,8 +53,13 @@ export default function TeamsPage() {
     if (!org) return;
     if (selectedTeamId === team.id) {
       setSelectedTeamId(null);
+      rosterRequestRef.current = null;
       return;
     }
+    // Guards against a slower earlier fetch resolving after a quick re-click
+    // and overwriting the newly selected team's roster.
+    rosterRequestRef.current = team.id;
+    const stale = () => rosterRequestRef.current !== team.id;
     setSelectedTeamId(team.id);
     setRoster([]);
     setRosterError(null);
@@ -61,23 +67,30 @@ export default function TeamsPage() {
     setRosterLoading(true);
     try {
       const seasons = await listSeasons(org.id);
+      if (stale()) return;
       const newestSeason = seasons[0];
       if (!newestSeason) {
         setRosterNote('No seasons found for this organization.');
         return;
       }
       const teamSeasons = await listTeamSeasons(org.id, newestSeason.id);
+      if (stale()) return;
       const teamSeason = teamSeasons.find((ts) => ts.team_id === team.id);
       if (!teamSeason) {
         setRosterNote(`No roster for ${team.name} in ${newestSeason.name}.`);
         return;
       }
       const rows = await getRoster(teamSeason.id);
+      if (stale()) return;
       setRoster(rows);
     } catch (err) {
-      setRosterError(err instanceof Error ? err.message : 'Failed to load roster.');
+      if (!stale()) {
+        setRosterError(err instanceof Error ? err.message : 'Failed to load roster.');
+      }
     } finally {
-      setRosterLoading(false);
+      if (!stale()) {
+        setRosterLoading(false);
+      }
     }
   }
 
@@ -90,7 +103,7 @@ export default function TeamsPage() {
     <div className="flex flex-col gap-4">
       <h1 className="text-lg font-semibold">Teams</h1>
 
-      {teamsError && <p className="text-sm text-red-600">Couldn&apos;t load teams: {teamsError}</p>}
+      {teamsError && <p className="text-sm text-danger">Couldn&apos;t load teams: {teamsError}</p>}
 
       {!teamsError && teamsLoading && <p className="text-secondary">Loading…</p>}
 
@@ -121,7 +134,7 @@ export default function TeamsPage() {
                       <div className="mt-1 rounded border border-selected p-3">
                         {rosterLoading && <p className="text-sm text-secondary">Loading roster…</p>}
                         {rosterError && (
-                          <p className="text-sm text-red-600">
+                          <p className="text-sm text-danger">
                             Couldn&apos;t load roster: {rosterError}
                           </p>
                         )}

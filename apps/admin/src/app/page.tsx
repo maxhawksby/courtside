@@ -106,7 +106,7 @@ export default function Home() {
                 className="rounded border border-selected bg-element px-3 py-2 text-sm"
               />
             </label>
-            {signInError && <p className="text-sm text-red-600">{signInError}</p>}
+            {signInError && <p className="text-sm text-danger">{signInError}</p>}
             <button
               type="submit"
               disabled={signingIn}
@@ -124,7 +124,7 @@ export default function Home() {
             {orgsLoading && <p className="text-secondary">Loading organizations…</p>}
 
             {orgsError && (
-              <p className="text-sm text-red-600">Couldn&apos;t load organizations: {orgsError}</p>
+              <p className="text-sm text-danger">Couldn&apos;t load organizations: {orgsError}</p>
             )}
 
             {!orgsLoading && !orgsError && orgs.length === 0 && (
