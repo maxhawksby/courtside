@@ -231,6 +231,8 @@ export interface MessageRow {
   sender_user_id: string;
   body: string | null;
   media_paths: string[];
+  /** SafeSport audit flag: sent 8pm–8am sender-local (see shared isOutOfHours). */
+  out_of_hours: boolean;
   created_at: string;
   deleted_at: string | null;
   deleted_by: string | null;

@@ -7,7 +7,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { DivisionPicker } from '@/features/teams/components/division-picker';
-import { PrimaryButton } from '@/features/teams/components/primary-button';
+import { PrimaryButton } from '@/components/ui/primary-button';
 import { createDivision, createTeam, listDivisions } from '@/lib/data';
 import { useOrg } from '@/lib/org-context';
 import { useTheme } from '@/hooks/use-theme';

@@ -1,7 +1,9 @@
 /**
- * Data-access layer — CONTRACT FILE (PM-owned).
- * Thin, typed wrappers over Supabase queries. Feature code calls these;
- * it never queries supabase directly. RLS enforces security server-side.
+ * Data-access layer, core domains — CONTRACT FILE (PM-owned).
+ * Organizations, divisions/seasons/teams, persons/guardianships, roster,
+ * invites. Thin, typed wrappers over Supabase queries. Feature code calls
+ * these; it never queries supabase directly. RLS enforces security
+ * server-side.
  */
 import type {
   DivisionRow,
@@ -16,28 +18,8 @@ import type {
   TeamSeasonRow,
 } from '@courtside/shared';
 
-import { supabase } from './supabase';
-
-function slugify(name: string): string {
-  const base = name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
-  return `${base}-${Math.random().toString(36).slice(2, 7)}`;
-}
-
-async function one<T>(q: PromiseLike<{ data: T | null; error: { message: string } | null }>): Promise<T> {
-  const { data, error } = await q;
-  if (error) throw new Error(error.message);
-  if (data == null) throw new Error('not found');
-  return data;
-}
-
-async function many<T>(q: PromiseLike<{ data: T[] | null; error: { message: string } | null }>): Promise<T[]> {
-  const { data, error } = await q;
-  if (error) throw new Error(error.message);
-  return data ?? [];
-}
+import { supabase } from '../supabase';
+import { many, one, slugify } from './_helpers';
 
 // ---- organizations ----
 

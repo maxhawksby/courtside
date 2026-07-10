@@ -7,8 +7,8 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { AddToRosterPanel } from '@/features/teams/components/add-to-roster-panel';
-import { EmptyState } from '@/features/teams/components/empty-state';
-import { PrimaryButton } from '@/features/teams/components/primary-button';
+import { EmptyState } from '@/components/ui/empty-state';
+import { PrimaryButton } from '@/components/ui/primary-button';
 import { RosterRow } from '@/features/teams/components/roster-row';
 import {
   createSeason,

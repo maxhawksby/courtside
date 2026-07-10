@@ -1,21 +1,33 @@
 @import "tailwindcss";
 
+/* Design tokens — CONTRACT (PM-owned): mirrors apps/mobile/src/constants/theme.ts
+   so both apps read as one product. Pages use the Tailwind names below
+   (bg-element, bg-selected, text-secondary); never hardcode hex in pages. */
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #000000;
+  --background-element: #f0f0f3;
+  --background-selected: #e0e1e6;
+  --foreground-secondary: #60646c;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-element: var(--background-element);
+  --color-selected: var(--background-selected);
+  --color-secondary: var(--foreground-secondary);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #000000;
+    --foreground: #ffffff;
+    --background-element: #212225;
+    --background-selected: #2e3135;
+    --foreground-secondary: #b0b4ba;
   }
 }
 

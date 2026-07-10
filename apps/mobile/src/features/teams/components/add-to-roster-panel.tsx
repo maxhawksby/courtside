@@ -8,8 +8,8 @@ import { useTheme } from '@/hooks/use-theme';
 import { addToRoster, createPerson, listPersons } from '@/lib/data';
 import type { PersonRow, RosterMembershipRow } from '@courtside/shared';
 
-import { PrimaryButton } from './primary-button';
-import { SegmentedControl } from './segmented-control';
+import { PrimaryButton } from '@/components/ui/primary-button';
+import { SegmentedControl } from '@/components/ui/segmented-control';
 
 const ROLE_OPTIONS: { value: RosterMembershipRow['role']; label: string }[] = [
   { value: 'player', label: 'Player' },

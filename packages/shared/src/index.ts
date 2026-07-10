@@ -65,6 +65,36 @@ export type OpponentScoringMode = (typeof OPPONENT_SCORING_MODES)[number];
 
 export const GUARDIANSHIP_MAX_PER_PLAYER = 5;
 export const PLAYER_LOGIN_MIN_AGE = 13;
+export const ADULT_AGE = 18;
+
+/** Whole years between date_of_birth (YYYY-MM-DD) and `on` (default: now). Null DOB → null. */
+export function ageFromDateOfBirth(dateOfBirth: string | null, on: Date = new Date()): number | null {
+  if (!dateOfBirth) return null;
+  const dob = new Date(`${dateOfBirth}T00:00:00`);
+  if (Number.isNaN(dob.getTime())) return null;
+  let age = on.getFullYear() - dob.getFullYear();
+  const beforeBirthday =
+    on.getMonth() < dob.getMonth() ||
+    (on.getMonth() === dob.getMonth() && on.getDate() < dob.getDate());
+  if (beforeBirthday) age -= 1;
+  return age;
+}
+
+/** Minor = DOB known and under 18. Unknown DOB reads as adult (mirrors app.is_minor_person). */
+export function isMinor(dateOfBirth: string | null): boolean {
+  const age = ageFromDateOfBirth(dateOfBirth);
+  return age != null && age < ADULT_AGE;
+}
+
+// ---- SafeSport quiet hours (COMPLIANCE.md §3: flag coach sends 8pm–8am local) ----
+
+export const QUIET_HOURS_START = 20; // 8pm inclusive
+export const QUIET_HOURS_END = 8; // 8am exclusive
+
+export function isOutOfHours(at: Date = new Date()): boolean {
+  const h = at.getHours();
+  return h >= QUIET_HOURS_START || h < QUIET_HOURS_END;
+}
 
 // ---- Database row types (mirror schema v1) ----
 
