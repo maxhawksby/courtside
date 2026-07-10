@@ -192,8 +192,10 @@ const styles = StyleSheet.create({
   },
   filterRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: Spacing.two,
     marginBottom: Spacing.three,
   },
   householdsButton: {

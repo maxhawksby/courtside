@@ -97,8 +97,13 @@ export async function createTeam(
  * archive before real season/chat data exists (SafeSport audit trail).
  */
 export async function deleteTeam(teamId: string): Promise<void> {
-  const { error } = await supabase.from('teams').delete().eq('id', teamId);
+  const { data, error } = await supabase.from('teams').delete().eq('id', teamId).select('id');
   if (error) throw new Error(error.message);
+  // RLS filters unauthorized rows silently (no error, zero rows) — an empty
+  // RETURNING set means nothing was actually deleted.
+  if (!data || data.length === 0) {
+    throw new Error('Team could not be deleted — it may already be gone, or you may not have permission.');
+  }
 }
 
 export async function createTeamSeason(

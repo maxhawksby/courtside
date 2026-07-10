@@ -596,5 +596,39 @@ function runSuite(): void {
       expect(parentRolesErr).toBeNull();
       expect((parentRoles ?? []).map((r) => r.role)).toEqual(expect.arrayContaining(['parent', 'scorekeeper']));
     });
+
+    // 13. teams delete: RLS filters unauthorized deletes *silently* (no error,
+    // zero rows) — the app's deleteTeam() relies on DELETE ... RETURNING to
+    // tell "deleted" apart from "blocked". Pin both halves of that contract.
+    it('coach delete on a team is silently filtered (no error, zero rows); owner delete returns the row', async () => {
+      const { data: victim, error: victimErr } = await serviceClient
+        .from('teams')
+        .insert({ organization_id: orgId, name: `Delete Me ${runId}` })
+        .select()
+        .single();
+      if (victimErr || !victim) throw new Error(`failed to create victim team: ${victimErr?.message}`);
+
+      const { data: coachDel, error: coachDelErr } = await coachClient
+        .from('teams')
+        .delete()
+        .eq('id', victim.id)
+        .select('id');
+      expect(coachDelErr).toBeNull();
+      expect(coachDel).toEqual([]);
+
+      const { data: stillThere } = await serviceClient
+        .from('teams')
+        .select('id')
+        .eq('id', victim.id);
+      expect(stillThere).toHaveLength(1);
+
+      const { data: ownerDel, error: ownerDelErr } = await ownerClient
+        .from('teams')
+        .delete()
+        .eq('id', victim.id)
+        .select('id');
+      expect(ownerDelErr).toBeNull();
+      expect(ownerDel).toHaveLength(1);
+    });
   });
 }

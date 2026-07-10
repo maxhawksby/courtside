@@ -6,9 +6,10 @@ import { useAuth } from '@/lib/auth';
 import { useTheme } from '@/hooks/use-theme';
 
 function tabIcon(name: SymbolViewProps['name']) {
-  return ({ color, size }: { color: ColorValue; size: number }) => (
-    <SymbolView name={name} size={size} tintColor={color} />
-  );
+  function TabIcon({ color, size }: { color: ColorValue; size: number }) {
+    return <SymbolView name={name} size={size} tintColor={color} />;
+  }
+  return TabIcon;
 }
 
 export default function AppLayout() {

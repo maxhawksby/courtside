@@ -3,6 +3,24 @@
 Plain-English record of what the app can do, newest first. Entries are written
 for both Max and the client.
 
+## Unreleased — Demo feedback, first wave (2026-07-10)
+
+Changes Max asked for after walking through the first demo. The full request
+list (including what's deferred and why) lives in docs/BACKLOG.md.
+
+- New tab layout: five tabs with Home in the middle — Teams, Directory, Home,
+  Events, Chat — now with icons. Settings moved to a gear in the top-right of
+  the Home screen.
+- Sign-in screen: Coaches / Players / Parents tabs at the bottom. For now they
+  just tailor the screen's wording (everyone signs in the same way); the
+  players tab notes it's for ages 13 and up.
+- Teams can be deleted by the owner or a division admin, with a clear warning:
+  deleting a team permanently removes its seasons, rosters, schedule, games,
+  and chat history. Review caught (and a new security test now guards) a
+  subtle bug where a blocked delete could be reported as successful.
+- Households is now an obvious button on the Directory screen instead of a
+  small header link.
+
 ## Unreleased — Phase 1 core features (2026-07-10)
 
 - Scheduling: coaches create games/practices/events; parents RSVP for
