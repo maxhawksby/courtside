@@ -16,6 +16,7 @@ import type {
   SeasonRow,
   TeamRow,
   TeamSeasonRow,
+  UserProfileRow,
 } from '@courtside/shared';
 
 import { supabase } from '../supabase';
@@ -105,6 +106,31 @@ export async function listTeamSeasons(orgId: string, seasonId: string): Promise<
       .select('*')
       .eq('organization_id', orgId)
       .eq('season_id', seasonId),
+  );
+}
+
+// ---- user ↔ person links ----
+
+export type UserProfileWithPerson = UserProfileRow & { persons: PersonRow | null };
+
+/** My person link in this org, or null when not linked yet. */
+export async function getMyProfile(orgId: string): Promise<UserProfileWithPerson | null> {
+  const { data: userData, error } = await supabase.auth.getUser();
+  if (error || !userData.user) throw new Error('not signed in');
+  const rows = await many<UserProfileWithPerson>(
+    supabase
+      .from('user_profiles')
+      .select('*, persons(*)')
+      .eq('organization_id', orgId)
+      .eq('user_id', userData.user.id),
+  );
+  return rows[0] ?? null;
+}
+
+/** Org members who hold logins — member pickers (DMs, channels, role grants). */
+export async function listOrgUserProfiles(orgId: string): Promise<UserProfileWithPerson[]> {
+  return many(
+    supabase.from('user_profiles').select('*, persons(*)').eq('organization_id', orgId),
   );
 }
 

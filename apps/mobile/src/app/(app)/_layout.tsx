@@ -23,6 +23,11 @@ export default function AppLayout() {
       <Tabs.Screen name="index" options={{ title: 'Home' }} />
       <Tabs.Screen name="teams" options={{ title: 'Teams' }} />
       <Tabs.Screen name="directory" options={{ title: 'Directory' }} />
+      <Tabs.Screen name="events" options={{ title: 'Events' }} />
+      <Tabs.Screen name="channels" options={{ title: 'Chat' }} />
+      <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
+      {/* Not a tab: reachable from Directory. */}
+      <Tabs.Screen name="households" options={{ href: null }} />
     </Tabs>
   );
 }
