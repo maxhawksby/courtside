@@ -90,6 +90,22 @@ export async function createTeam(
   );
 }
 
+/**
+ * Owner/division_admin only (RLS `teams_write`). Hard delete: FK cascades take
+ * the team's seasons, rosters, events, games, and team channels *including
+ * message history* with it. Acceptable for beta test data only — must become
+ * archive before real season/chat data exists (SafeSport audit trail).
+ */
+export async function deleteTeam(teamId: string): Promise<void> {
+  const { data, error } = await supabase.from('teams').delete().eq('id', teamId).select('id');
+  if (error) throw new Error(error.message);
+  // RLS filters unauthorized rows silently (no error, zero rows) — an empty
+  // RETURNING set means nothing was actually deleted.
+  if (!data || data.length === 0) {
+    throw new Error('Team could not be deleted — it may already be gone, or you may not have permission.');
+  }
+}
+
 export async function createTeamSeason(
   orgId: string,
   teamId: string,

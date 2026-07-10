@@ -1,5 +1,7 @@
+import { useRouter } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { ActivityIndicator, Pressable, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -7,14 +9,30 @@ import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { CreateOrganizationForm } from '@/features/org/create-organization-form';
 import { useAuth } from '@/lib/auth';
 import { useOrg } from '@/lib/org-context';
+import { useTheme } from '@/hooks/use-theme';
 
 export default function HomeScreen() {
+  const router = useRouter();
+  const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const { signOut } = useAuth();
   const { activeOrg, loading } = useOrg();
 
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        {/* Absolute position ignores the safe-area padding, so offset by the inset. */}
+        <Pressable
+          style={[styles.settingsButton, { top: insets.top + Spacing.two }]}
+          hitSlop={8}
+          accessibilityLabel="Settings"
+          onPress={() => router.push('/settings')}>
+          <SymbolView
+            name={{ ios: 'gearshape', android: 'settings', web: 'settings' }}
+            size={24}
+            tintColor={theme.text}
+          />
+        </Pressable>
         {loading ? (
           <ThemedView style={styles.center}>
             <ActivityIndicator />
@@ -56,6 +74,11 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  settingsButton: {
+    position: 'absolute',
+    right: Spacing.four,
+    zIndex: 1,
   },
   welcome: {
     alignSelf: 'stretch',
