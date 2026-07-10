@@ -1,4 +1,5 @@
-import { DarkTheme, DefaultTheme, Slot, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { Slot } from 'expo-router';
 import { ActivityIndicator, useColorScheme } from 'react-native';
 
 import { ThemedView } from '@/components/themed-view';

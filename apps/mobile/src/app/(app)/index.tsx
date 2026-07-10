@@ -1,5 +1,5 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
 import { ActivityIndicator, Pressable, StyleSheet } from 'react-native';
 import Animated, { Easing, FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -101,11 +101,7 @@ export default function HomeScreen() {
           style={[styles.settingsButton, { top: insets.top + Spacing.two }]}
           accessibilityLabel="Settings"
           onPress={() => router.push('/settings')}>
-          <SymbolView
-            name={{ ios: 'gearshape', android: 'settings', web: 'settings' }}
-            size={24}
-            tintColor={theme.text}
-          />
+          <Ionicons name="settings-outline" size={24} color={theme.text} />
         </Pressable>
         {loading ? (
           <ThemedView style={styles.center}>

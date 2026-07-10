@@ -1,13 +1,14 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Redirect, Tabs } from 'expo-router';
-import { SymbolView, type SymbolViewProps } from 'expo-symbols';
+import type { ComponentProps } from 'react';
 import { StyleSheet, type ColorValue } from 'react-native';
 
 import { useAuth } from '@/lib/auth';
 import { useTheme } from '@/hooks/use-theme';
 
-function tabIcon(name: SymbolViewProps['name']) {
+function tabIcon(name: ComponentProps<typeof Ionicons>['name']) {
   function TabIcon({ color, size }: { color: ColorValue; size: number }) {
-    return <SymbolView name={name} size={size} tintColor={color} />;
+    return <Ionicons name={name} size={size} color={color as string} />;
   }
   return TabIcon;
 }
@@ -35,50 +36,20 @@ export default function AppLayout() {
       }}>
       <Tabs.Screen
         name="teams"
-        options={{
-          title: 'Teams',
-          tabBarIcon: tabIcon({ ios: 'person.3', android: 'groups', web: 'groups' }),
-        }}
+        options={{ title: 'Teams', tabBarIcon: tabIcon('people-outline') }}
       />
       <Tabs.Screen
         name="directory"
-        options={{
-          title: 'Directory',
-          tabBarIcon: tabIcon({
-            ios: 'list.bullet',
-            android: 'format_list_bulleted',
-            web: 'format_list_bulleted',
-          }),
-        }}
+        options={{ title: 'Directory', tabBarIcon: tabIcon('list-outline') }}
       />
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: tabIcon({ ios: 'house', android: 'home', web: 'home' }),
-        }}
-      />
+      <Tabs.Screen name="index" options={{ title: 'Home', tabBarIcon: tabIcon('home-outline') }} />
       <Tabs.Screen
         name="events"
-        options={{
-          title: 'Events',
-          tabBarIcon: tabIcon({
-            ios: 'calendar',
-            android: 'calendar_month',
-            web: 'calendar_month',
-          }),
-        }}
+        options={{ title: 'Events', tabBarIcon: tabIcon('calendar-outline') }}
       />
       <Tabs.Screen
         name="channels"
-        options={{
-          title: 'Chat',
-          tabBarIcon: tabIcon({
-            ios: 'bubble.left.and.bubble.right',
-            android: 'chat',
-            web: 'chat',
-          }),
-        }}
+        options={{ title: 'Chat', tabBarIcon: tabIcon('chatbubbles-outline') }}
       />
       {/* Not tabs: settings opens from the gear on Home; households from Directory. */}
       <Tabs.Screen name="settings" options={{ href: null }} />
