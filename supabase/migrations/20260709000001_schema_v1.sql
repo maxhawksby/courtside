@@ -871,6 +871,32 @@ create policy media_consents_insert on public.media_consents for insert
   );
 
 -- ============================================================================
+-- GRANTS — API-role table privileges (RLS filters rows; grants are the floor)
+-- ============================================================================
+-- Migrations here run as `postgres`, and this stack's default ACLs only cover
+-- objects created by `supabase_admin` — so nothing below is automatic. Every
+-- privilege an API role holds is written explicitly:
+--   * anon: no table access at all — every read in the product is authenticated.
+--   * authenticated: DML on public tables, rows scoped by RLS. messages gets
+--     no DELETE grant (soft-delete only); the trigger is the backstop.
+--   * service_role: full access (trusted backend key; bypasses RLS by design).
+--   * app schema: RLS policies invoke app.* helpers as the querying role, so
+--     API roles need USAGE (EXECUTE on functions is PUBLIC by default).
+
+grant usage on schema public to authenticated, service_role;
+grant usage on schema app to authenticated, service_role;
+
+grant select, insert, update, delete on all tables in schema public to authenticated;
+revoke delete on public.messages from authenticated;
+grant all on all tables in schema public to service_role;
+
+-- Tables added by later migrations get the same floor automatically.
+alter default privileges in schema public
+  grant select, insert, update, delete on tables to authenticated;
+alter default privileges in schema public
+  grant all on tables to service_role;
+
+-- ============================================================================
 -- REALTIME
 -- ============================================================================
 alter publication supabase_realtime add table public.game_events;
