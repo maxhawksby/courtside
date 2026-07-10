@@ -28,10 +28,15 @@ export async function getMyOrganizations(): Promise<OrganizationRow[]> {
   return many(supabase.from('organizations').select('*').order('created_at'));
 }
 
-/** Creator becomes owner via DB trigger. */
+/**
+ * Creator becomes owner via DB trigger. Goes through an RPC rather than a
+ * plain insert: INSERT ... RETURNING is checked against org_select before the
+ * owner-grant trigger fires, so a direct .insert().select() is always
+ * rejected by RLS (see migration 20260710000004).
+ */
 export async function createOrganization(name: string): Promise<OrganizationRow> {
   return one(
-    supabase.from('organizations').insert({ name, slug: slugify(name) }).select().single(),
+    supabase.rpc('create_organization', { p_name: name, p_slug: slugify(name) }).single(),
   );
 }
 
