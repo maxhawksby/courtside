@@ -1,12 +1,24 @@
 import { useEffect, useState } from 'react';
 import { Modal, Pressable, Share, StyleSheet, TextInput } from 'react-native';
-import type { InviteRow } from '@courtside/shared';
+import type { InviteRow, OrgRole } from '@courtside/shared';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { SegmentedControl } from '@/components/ui/segmented-control';
 import { createInvite } from '@/lib/data';
+
+// Roles offered from this sheet — a person-linked invite, so scoped to the
+// relationships that make sense from a person's directory entry. Defaults to
+// 'parent' so existing callers (which don't know about this picker) behave
+// exactly as before.
+type InviteRole = Extract<OrgRole, 'parent' | 'follower' | 'scorekeeper'>;
+const INVITE_ROLE_OPTIONS: { value: InviteRole; label: string }[] = [
+  { value: 'parent', label: 'Parent' },
+  { value: 'follower', label: 'Follower' },
+  { value: 'scorekeeper', label: 'Scorekeeper' },
+];
 
 type InviteParentSheetProps = {
   visible: boolean;
@@ -27,6 +39,7 @@ export function InviteParentSheet({
 }: InviteParentSheetProps) {
   const theme = useTheme();
   const [email, setEmail] = useState(defaultEmail ?? '');
+  const [role, setRole] = useState<InviteRole>('parent');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [invite, setInvite] = useState<InviteRow | null>(null);
@@ -34,6 +47,7 @@ export function InviteParentSheet({
   useEffect(() => {
     if (visible) {
       setEmail(defaultEmail ?? '');
+      setRole('parent');
       setInvite(null);
       setError(null);
       setSubmitting(false);
@@ -47,7 +61,7 @@ export function InviteParentSheet({
     try {
       const created = await createInvite(orgId, {
         email: email.trim(),
-        role: 'parent',
+        role,
         personId,
       });
       setInvite(created);
@@ -73,7 +87,7 @@ export function InviteParentSheet({
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <ThemedView style={styles.sheet}>
         <ThemedView style={styles.sheetHeader}>
-          <ThemedText type="subtitle">Invite as parent</ThemedText>
+          <ThemedText type="subtitle">Invite</ThemedText>
           <Pressable onPress={onClose} hitSlop={8}>
             <ThemedText type="link">Close</ThemedText>
           </Pressable>
@@ -91,6 +105,10 @@ export function InviteParentSheet({
               autoCapitalize="none"
               autoCorrect={false}
             />
+            <ThemedText type="small" themeColor="textSecondary">
+              Role
+            </ThemedText>
+            <SegmentedControl options={INVITE_ROLE_OPTIONS} value={role} onChange={setRole} />
             {error ? (
               <ThemedText type="small" themeColor="textSecondary">
                 {error}
