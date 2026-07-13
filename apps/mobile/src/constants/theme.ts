@@ -26,6 +26,18 @@ export const Colors = {
 
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 
+/** Scheme-independent brand palette. Inline hex outside this file is banned. */
+export const Brand = {
+  primary: '#208AEF',
+  primaryGradientStart: '#3C9FFE',
+  primaryGradientEnd: '#0274DF',
+  /** Text/spinner rendered on a `primary` background. */
+  onPrimary: '#ffffff',
+  link: '#3c87f7',
+  danger: '#d92c2c',
+  imagePlaceholder: '#00000010',
+} as const;
+
 export const Fonts = Platform.select({
   ios: {
     /** iOS `UIFontDescriptorSystemDesignDefault` */

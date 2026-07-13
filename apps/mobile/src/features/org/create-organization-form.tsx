@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, TextInput } from 'react-nativ
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Colors, Spacing } from '@/constants/theme';
+import { Brand, Colors, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { createOrganization } from '@/lib/data';
 import { useOrg } from '@/lib/org-context';
@@ -56,7 +56,7 @@ export function CreateOrganizationForm() {
         disabled={submitting || !name.trim()}
         onPress={handleSubmit}>
         {submitting ? (
-          <ActivityIndicator color="#ffffff" />
+          <ActivityIndicator color={Brand.onPrimary} />
         ) : (
           <ThemedText style={styles.buttonText}>Create organization</ThemedText>
         )}
@@ -81,10 +81,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   error: {
-    color: '#d92c2c',
+    color: Brand.danger,
   },
   button: {
-    backgroundColor: '#208AEF',
+    backgroundColor: Brand.primary,
     borderRadius: Spacing.two,
     paddingVertical: Spacing.three,
     alignItems: 'center',
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: '#ffffff',
+    color: Brand.onPrimary,
     fontWeight: '600',
   },
 });
