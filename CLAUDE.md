@@ -29,6 +29,20 @@ coaches), divisions, teams, and season rosters.
   marketing copy, or store listings. Refer to it as "the reference app" in client-facing docs.
 - **Never scrape gc.com** or its API. Client data arrives via CSV/manual entry with consent.
 
+## Local dev loop (running the app on Max's phone)
+
+Seeing UI changes on the physical device is the primary debugging loop - it must always
+just work. The one canonical way to start it:
+
+- `cd apps/mobile && npm run dev` - runs `scripts/dev-doctor.sh`, which preflights and
+  auto-fixes the known failure layers (WSL IP vs `.env` drift, stale Windows portproxies,
+  zombie Metro, Docker down, Supabase gateway missing its 54321 port mapping), then starts
+  Expo in LAN mode. Phone runs Expo Go on the same Wi-Fi and scans the QR.
+- Never use `expo start --tunnel` here (unnecessary under WSL mirrored networking, and
+  Expo's anonymous ngrok pool is saturated - dies with ERR_NGROK_108 masked as a
+  `'body'` TypeError). Never re-add Windows portproxies; mirrored networking replaced them.
+- If the doctor script itself can't fix something, it prints the exact remediation command.
+
 ## Delegation framework (how work gets built)
 
 Main-loop Claude (Fable) is PM/architect/integrator. Specialized cheaper-model agents in
