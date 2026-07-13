@@ -25,6 +25,7 @@ done
 if ! git -C "$REPO" worktree list --porcelain | grep -qx "worktree $WAVES/main"; then
   git -C "$REPO" worktree add "$WAVES/main" main
 fi
+[[ -d "$WAVES/main/node_modules" ]] || (cd "$WAVES/main" && npm ci)
 
 # --- lane worktrees ----------------------------------------------------------
 for L in "${LANES[@]}"; do
