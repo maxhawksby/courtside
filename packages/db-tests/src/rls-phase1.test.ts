@@ -597,10 +597,12 @@ function runSuite(): void {
       expect((parentRoles ?? []).map((r) => r.role)).toEqual(expect.arrayContaining(['parent', 'scorekeeper']));
     });
 
-    // 13. teams delete: RLS filters unauthorized deletes *silently* (no error,
-    // zero rows) — the app's deleteTeam() relies on DELETE ... RETURNING to
-    // tell "deleted" apart from "blocked". Pin both halves of that contract.
-    it('coach delete on a team is silently filtered (no error, zero rows); owner delete returns the row', async () => {
+    // 13. teams delete: RLS filters denied deletes *silently* (no error, zero
+    // rows) — DELETE ... RETURNING is how the app tells "deleted" apart from
+    // "blocked". Since migration 20260713000001 (team archive) there is no
+    // delete policy on teams at all, so default-deny blocks every role,
+    // including the owner. Archive (rls-team-archive.test.ts) replaces delete.
+    it('team delete is silently filtered for coach AND owner (no delete policy — archive instead)', async () => {
       const { data: victim, error: victimErr } = await serviceClient
         .from('teams')
         .insert({ organization_id: orgId, name: `Delete Me ${runId}` })
@@ -608,27 +610,21 @@ function runSuite(): void {
         .single();
       if (victimErr || !victim) throw new Error(`failed to create victim team: ${victimErr?.message}`);
 
-      const { data: coachDel, error: coachDelErr } = await coachClient
-        .from('teams')
-        .delete()
-        .eq('id', victim.id)
-        .select('id');
-      expect(coachDelErr).toBeNull();
-      expect(coachDel).toEqual([]);
+      for (const client of [coachClient, ownerClient]) {
+        const { data: del, error: delErr } = await client
+          .from('teams')
+          .delete()
+          .eq('id', victim.id)
+          .select('id');
+        expect(delErr).toBeNull();
+        expect(del).toEqual([]);
+      }
 
       const { data: stillThere } = await serviceClient
         .from('teams')
         .select('id')
         .eq('id', victim.id);
       expect(stillThere).toHaveLength(1);
-
-      const { data: ownerDel, error: ownerDelErr } = await ownerClient
-        .from('teams')
-        .delete()
-        .eq('id', victim.id)
-        .select('id');
-      expect(ownerDelErr).toBeNull();
-      expect(ownerDel).toHaveLength(1);
     });
   });
 }

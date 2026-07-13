@@ -66,14 +66,15 @@ export async function createSeason(orgId: string, name: string): Promise<SeasonR
 
 export type TeamWithDivision = TeamRow & { divisions: Pick<DivisionRow, 'id' | 'name'> | null };
 
-export async function listTeams(orgId: string): Promise<TeamWithDivision[]> {
-  return many(
-    supabase
-      .from('teams')
-      .select('*, divisions(id, name)')
-      .eq('organization_id', orgId)
-      .order('name'),
-  );
+export async function listTeams(
+  orgId: string,
+  opts: { includeArchived?: boolean } = {},
+): Promise<TeamWithDivision[]> {
+  let query = supabase.from('teams').select('*, divisions(id, name)').eq('organization_id', orgId);
+  if (!opts.includeArchived) {
+    query = query.is('archived_at', null);
+  }
+  return many(query.order('name'));
 }
 
 export async function createTeam(
@@ -91,10 +92,11 @@ export async function createTeam(
 }
 
 /**
- * Owner/division_admin only (RLS `teams_write`). Hard delete: FK cascades take
- * the team's seasons, rosters, events, games, and team channels *including
- * message history* with it. Acceptable for beta test data only — must become
- * archive before real season/chat data exists (SafeSport audit trail).
+ * @deprecated Teams are archived, never deleted — hard delete would cascade
+ * away channels and message history (SafeSport audit trail). Since migration
+ * 20260713000001 the DB has no delete policy on teams, so this always throws
+ * (RLS default-deny → zero rows returned) for every role including owners.
+ * Use {@link archiveTeam}. Export is removed at FE-2 integration.
  */
 export async function deleteTeam(teamId: string): Promise<void> {
   const { data, error } = await supabase.from('teams').delete().eq('id', teamId).select('id');
@@ -103,6 +105,38 @@ export async function deleteTeam(teamId: string): Promise<void> {
   // RETURNING set means nothing was actually deleted.
   if (!data || data.length === 0) {
     throw new Error('Team could not be deleted — it may already be gone, or you may not have permission.');
+  }
+}
+
+/**
+ * Owner/division_admin only (RLS `teams_update`). The team and everything
+ * under it (seasons, rosters, events, channels, message history) survives;
+ * default listTeams() hides it.
+ */
+export async function archiveTeam(teamId: string): Promise<void> {
+  const { data, error } = await supabase
+    .from('teams')
+    .update({ archived_at: new Date().toISOString() })
+    .eq('id', teamId)
+    .select('id');
+  if (error) throw new Error(error.message);
+  // Same RETURNING check as deleteTeam: RLS filters unauthorized rows
+  // silently, so an empty set means nothing was archived.
+  if (!data || data.length === 0) {
+    throw new Error('Team could not be archived — it may not exist, or you may not have permission.');
+  }
+}
+
+/** Owner/division_admin only (RLS `teams_update`). Clears archived_at. */
+export async function unarchiveTeam(teamId: string): Promise<void> {
+  const { data, error } = await supabase
+    .from('teams')
+    .update({ archived_at: null })
+    .eq('id', teamId)
+    .select('id');
+  if (error) throw new Error(error.message);
+  if (!data || data.length === 0) {
+    throw new Error('Team could not be unarchived — it may not exist, or you may not have permission.');
   }
 }
 
