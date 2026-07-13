@@ -56,6 +56,14 @@ Main-loop Claude (Fable) is PM/architect/integrator. Specialized cheaper-model a
 5. Security stays senior: RLS, auth, payments, COPPA-adjacent code is PM-written or
    PM line-reviewed. Never delegated wholesale.
 
+### Parallel lanes (standing BE/FE sessions)
+
+Long-lived LANE-BE and LANE-FE Claude sessions build backend and frontend in
+parallel per `docs/ORCHESTRATION.md` (topology, mailbox message protocol,
+contract-handoff choreography, guardrails). Boot/resume with
+`scripts/herdr-lanes.sh` or the `/lanes` skill; lane charters live in
+`docs/orchestration/`.
+
 ## Conventions
 
 - Identity: personal tier (`mhawk0212@gmail.com` / `maxhawksby`) — handled by folder placement.
