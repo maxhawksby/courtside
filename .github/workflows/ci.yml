@@ -16,3 +16,34 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run lint --workspace apps/mobile
+
+  db:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # The Supabase CLI is a lockfile-pinned npm devDependency, so npx runs
+      # the exact same CLI version as local dev — no action-version drift.
+      # On a fresh runner `supabase start` initializes the database, applying
+      # every migration and seed.sql (docker is preinstalled on ubuntu-latest).
+      - name: Start Supabase stack
+        run: npx supabase start
+      - name: RLS tests against live Postgres (hard-fails on skipped tests)
+        run: bash scripts/ci-db-tests.sh
+      - name: Type drift check (db.generated.ts vs schema)
+        run: bash scripts/check-db-types.sh
