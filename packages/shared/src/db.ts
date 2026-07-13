@@ -45,6 +45,7 @@ export interface TeamRow {
   division_id: string | null;
   name: string;
   created_at: string;
+  archived_at: string | null;
 }
 
 export interface TeamSeasonRow {
