@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { SegmentedControl } from '@/components/ui/segmented-control';
-import { Colors, MaxContentWidth, Spacing } from '@/constants/theme';
+import { Brand, Colors, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 
@@ -108,7 +108,7 @@ export default function SignInScreen() {
             disabled={submitting || !email || !password}
             onPress={handleSubmit}>
             {submitting ? (
-              <ActivityIndicator color="#ffffff" />
+              <ActivityIndicator color={Brand.onPrimary} />
             ) : (
               <ThemedText style={styles.buttonText}>Sign in</ThemedText>
             )}
@@ -159,10 +159,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   error: {
-    color: '#d92c2c',
+    color: Brand.danger,
   },
   button: {
-    backgroundColor: '#208AEF',
+    backgroundColor: Brand.primary,
     borderRadius: Spacing.two,
     paddingVertical: Spacing.three,
     alignItems: 'center',
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: '#ffffff',
+    color: Brand.onPrimary,
     fontWeight: '600',
   },
   audienceTabs: {

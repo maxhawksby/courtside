@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import type { PersonRow } from '@courtside/shared';
 
 import { ThemedText } from '@/components/themed-text';
+import { Brand } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { canRenderMedia } from '@/lib/data';
 
@@ -47,7 +48,7 @@ export function PersonAvatar({ person, consent, size = 64 }: PersonAvatarProps) 
 
 const styles = StyleSheet.create({
   image: {
-    backgroundColor: '#00000010',
+    backgroundColor: Brand.imagePlaceholder,
   },
   initials: {
     alignItems: 'center',

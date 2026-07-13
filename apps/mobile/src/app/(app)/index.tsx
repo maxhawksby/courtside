@@ -5,7 +5,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { BottomTabInset, Brand, MaxContentWidth, Spacing } from '@/constants/theme';
 import { CreateOrganizationForm } from '@/features/org/create-organization-form';
 import { useAuth } from '@/lib/auth';
 import { useOrg } from '@/lib/org-context';
@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   button: {
-    backgroundColor: '#208AEF',
+    backgroundColor: Brand.primary,
     borderRadius: Spacing.two,
     paddingVertical: Spacing.three,
     paddingHorizontal: Spacing.five,
@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.three,
   },
   buttonText: {
-    color: '#ffffff',
+    color: Brand.onPrimary,
     fontWeight: '600',
   },
 });

@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Brand, Spacing } from '@/constants/theme';
 import { AddToRosterPanel } from '@/features/teams/components/add-to-roster-panel';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PrimaryButton } from '@/components/ui/primary-button';
@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.four,
   },
   deleteText: {
-    color: '#d92c2c',
+    color: Brand.danger,
     fontWeight: '600',
   },
   centered: {
