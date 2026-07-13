@@ -34,6 +34,12 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   // `undefined` = initial load not settled yet; a user id / null = the user
   // the current org list was loaded for. Loading is derived so the effect
   // never has to set state synchronously.
+  //
+  // Note: loading tracks user-identity CHANGES, not every refetch. A
+  // background auth token refresh re-runs the effect (new `user` object) and
+  // refetches, but the id-based key still reads as settled, so data updates
+  // in place with no app-wide loading flash (PM-ratified improvement over
+  // the pre-refactor behavior, decision 2026-07-13-p14).
   const [loadedForUser, setLoadedForUser] = useState<string | null | undefined>(undefined);
   const loading = loadedForUser === undefined || loadedForUser !== userId;
 

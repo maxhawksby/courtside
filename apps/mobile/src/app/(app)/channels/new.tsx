@@ -229,7 +229,7 @@ export default function NewChannelScreen() {
           autoCorrect={false}
         />
 
-        {membersError ? (
+        {membersError && !membersLoading ? (
           <ThemedText type="small">{membersError}</ThemedText>
         ) : membersLoading ? (
           <ActivityIndicator />
