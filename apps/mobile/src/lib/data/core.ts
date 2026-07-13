@@ -91,22 +91,10 @@ export async function createTeam(
   );
 }
 
-/**
- * @deprecated Teams are archived, never deleted — hard delete would cascade
- * away channels and message history (SafeSport audit trail). Since migration
- * 20260713000001 the DB has no delete policy on teams, so this always throws
- * (RLS default-deny → zero rows returned) for every role including owners.
- * Use {@link archiveTeam}. Export is removed at FE-2 integration.
- */
-export async function deleteTeam(teamId: string): Promise<void> {
-  const { data, error } = await supabase.from('teams').delete().eq('id', teamId).select('id');
-  if (error) throw new Error(error.message);
-  // RLS filters unauthorized rows silently (no error, zero rows) — an empty
-  // RETURNING set means nothing was actually deleted.
-  if (!data || data.length === 0) {
-    throw new Error('Team could not be deleted — it may already be gone, or you may not have permission.');
-  }
-}
+// Teams are archived, never deleted: since migration 20260713000001 the DB
+// has no delete policy on teams (default-deny for every role), because a hard
+// delete would cascade away channels and message history — the SafeSport
+// audit trail. Use archiveTeam.
 
 /**
  * Owner/division_admin only (RLS `teams_update`). The team and everything
@@ -120,7 +108,7 @@ export async function archiveTeam(teamId: string): Promise<void> {
     .eq('id', teamId)
     .select('id');
   if (error) throw new Error(error.message);
-  // Same RETURNING check as deleteTeam: RLS filters unauthorized rows
+  // RETURNING check: RLS filters unauthorized rows
   // silently, so an empty set means nothing was archived.
   if (!data || data.length === 0) {
     throw new Error('Team could not be archived — it may not exist, or you may not have permission.');
