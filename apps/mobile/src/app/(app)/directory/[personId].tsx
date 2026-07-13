@@ -26,6 +26,7 @@ export default function PersonDetailScreen() {
   const params = useLocalSearchParams<{ personId: string }>();
   const personId = Array.isArray(params.personId) ? params.personId[0] : params.personId;
   const { activeOrg } = useOrg();
+  const activeOrgId = activeOrg?.id ?? null;
 
   const [person, setPerson] = useState<PersonRow | null>(null);
   const [relationships, setRelationships] = useState<GuardianshipWithPersons[]>([]);
@@ -68,7 +69,7 @@ export default function PersonDetailScreen() {
       // create mode (an empty form reveals nothing; RLS re-checks the write).
       // Anyone else keeps seeing nothing, preserving fail-closed.
       try {
-        const me = await getMyProfile(activeOrg?.id ?? '');
+        const me = await getMyProfile(activeOrgId ?? '');
         const myPersonId = me?.person_id ?? null;
         setCanStartSensitive(
           myPersonId != null &&
@@ -85,7 +86,7 @@ export default function PersonDetailScreen() {
     } finally {
       setLoading(false);
     }
-  }, [personId, activeOrg?.id]);
+  }, [personId, activeOrgId]);
 
   // Focus-based reload: guardian links, consent changes, and sensitive-info
   // edits made on this screen or pushed screens appear on return.

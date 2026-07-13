@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -19,26 +19,33 @@ export default function NewTeamScreen() {
   const [name, setName] = useState('');
   const [divisions, setDivisions] = useState<DivisionRow[]>([]);
   const [selectedDivisionId, setSelectedDivisionId] = useState<string | null>(null);
-  const [loadingDivisions, setLoadingDivisions] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadDivisions = useCallback(async () => {
-    if (!activeOrg) return;
-    setLoadingDivisions(true);
-    try {
-      const rows = await listDivisions(activeOrg.id);
-      setDivisions(rows);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not load divisions');
-    } finally {
-      setLoadingDivisions(false);
-    }
-  }, [activeOrg]);
+  // Derived: divisions are loading until the fetch for the current org
+  // settles, so the effect never sets state synchronously. Stays true forever
+  // if there is no active org — same as the previous initial-true behavior.
+  const [divisionsSettledFor, setDivisionsSettledFor] = useState<string | null>(null);
+  const loadingDivisions = divisionsSettledFor !== (activeOrg?.id ?? '');
 
   useEffect(() => {
-    void loadDivisions();
-  }, [loadDivisions]);
+    if (!activeOrg) return;
+    let cancelled = false;
+    const orgId = activeOrg.id;
+    listDivisions(orgId)
+      .then((rows) => {
+        if (!cancelled) setDivisions(rows);
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : 'Could not load divisions');
+      })
+      .finally(() => {
+        if (!cancelled) setDivisionsSettledFor(orgId);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeOrg]);
 
   const handleCreateDivision = async (divisionName: string) => {
     if (!activeOrg) return;

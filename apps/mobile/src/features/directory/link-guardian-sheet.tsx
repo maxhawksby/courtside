@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Modal, Pressable, StyleSheet, TextInput } from 'react-native';
 import type { PersonRow } from '@courtside/shared';
 
@@ -33,14 +33,18 @@ export function LinkGuardianSheet({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  // Clear the form when the sheet closes, using the adjust-state-during-render
+  // pattern instead of an effect so no setState happens inside an effect body.
+  const [prevVisible, setPrevVisible] = useState(visible);
+  if (prevVisible !== visible) {
+    setPrevVisible(visible);
     if (!visible) {
       setSelected(null);
       setRelationship('');
       setError(null);
       setSubmitting(false);
     }
-  }, [visible]);
+  }
 
   const handleLink = async () => {
     if (!selected) return;

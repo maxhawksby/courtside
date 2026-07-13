@@ -56,6 +56,15 @@ export default function DirectoryIndexScreen() {
     }, [load]),
   );
 
+  const trimmedQuery = debouncedQuery.trim();
+
+  const filteredPersons = useMemo(() => {
+    if (filter === 'all') return persons;
+    return persons.filter((person) =>
+      filter === 'players' ? isMinor(person.date_of_birth) : !isMinor(person.date_of_birth),
+    );
+  }, [persons, filter]);
+
   if (orgLoading) {
     return (
       <ThemedView style={styles.centered}>
@@ -78,15 +87,6 @@ export default function DirectoryIndexScreen() {
       </ThemedView>
     );
   }
-
-  const trimmedQuery = debouncedQuery.trim();
-
-  const filteredPersons = useMemo(() => {
-    if (filter === 'all') return persons;
-    return persons.filter((person) =>
-      filter === 'players' ? isMinor(person.date_of_birth) : !isMinor(person.date_of_birth),
-    );
-  }, [persons, filter]);
 
   const filterLabel = filter === 'players' ? 'players' : filter === 'adults' ? 'adults' : 'people';
 

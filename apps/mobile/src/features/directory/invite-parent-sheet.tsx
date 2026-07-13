@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Modal, Pressable, Share, StyleSheet, TextInput } from 'react-native';
 import type { InviteRow, OrgRole } from '@courtside/shared';
 
@@ -44,7 +44,13 @@ export function InviteParentSheet({
   const [error, setError] = useState<string | null>(null);
   const [invite, setInvite] = useState<InviteRow | null>(null);
 
-  useEffect(() => {
+  // Reset the form whenever the sheet opens (or defaultEmail changes while
+  // open), using the adjust-state-during-render pattern instead of an effect
+  // so no setState happens inside an effect body.
+  const resetKey = visible ? `open|${defaultEmail ?? ''}` : 'closed';
+  const [prevResetKey, setPrevResetKey] = useState(resetKey);
+  if (prevResetKey !== resetKey) {
+    setPrevResetKey(resetKey);
     if (visible) {
       setEmail(defaultEmail ?? '');
       setRole('parent');
@@ -52,7 +58,7 @@ export function InviteParentSheet({
       setError(null);
       setSubmitting(false);
     }
-  }, [visible, defaultEmail]);
+  }
 
   const handleInvite = async () => {
     if (!email.trim()) return;
