@@ -25,7 +25,6 @@ export function PersonPicker({ orgId, excludePersonId, excludeIds, onSelect }: P
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebouncedValue(query, 300);
   const [results, setResults] = useState<PersonRow[]>([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [showQuickCreate, setShowQuickCreate] = useState(false);
@@ -37,27 +36,32 @@ export function PersonPicker({ orgId, excludePersonId, excludeIds, onSelect }: P
   // render, and we only want to re-fetch when the actual id set changes.
   const excludeIdsKey = (excludeIds ?? []).join(',');
 
+  // Loading is derived: a search is pending until the fetch for the current
+  // input combination settles, so the effect never sets state synchronously.
+  const searchKey = `${orgId}|${debouncedQuery}|${excludePersonId ?? ''}|${excludeIdsKey}`;
+  const [settledKey, setSettledKey] = useState<string | null>(null);
+  const loading = settledKey !== searchKey;
+
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setError(null);
     listPersons(orgId, debouncedQuery)
       .then((rows) => {
         if (cancelled) return;
         const excluded = new Set(excludeIdsKey ? excludeIdsKey.split(',') : []);
         if (excludePersonId) excluded.add(excludePersonId);
         setResults(rows.filter((p) => !excluded.has(p.id)));
+        setError(null);
       })
       .catch((e) => {
         if (!cancelled) setError(e instanceof Error ? e.message : 'Search failed');
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setSettledKey(searchKey);
       });
     return () => {
       cancelled = true;
     };
-  }, [orgId, debouncedQuery, excludePersonId, excludeIdsKey]);
+  }, [orgId, debouncedQuery, excludePersonId, excludeIdsKey, searchKey]);
 
   const handleQuickCreate = async () => {
     if (!firstName.trim() || !lastName.trim()) return;
@@ -88,7 +92,7 @@ export function PersonPicker({ orgId, excludePersonId, excludeIds, onSelect }: P
         autoCorrect={false}
       />
 
-      {error ? (
+      {error && !loading ? (
         <ThemedText type="small" themeColor="textSecondary">
           {error}
         </ThemedText>

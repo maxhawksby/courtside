@@ -36,20 +36,25 @@ export function MediaConsentSection({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadHistory = useCallback(async () => {
-    try {
-      const rows = await listConsentHistory(playerPersonId);
-      setHistory(rows);
-    } catch {
-      setHistory([]);
-    } finally {
-      setHistoryLoaded(true);
-    }
-  }, [playerPersonId]);
+  // Returns data instead of setting state so the effect below can keep all
+  // setState calls inside promise callbacks (never synchronously in the
+  // effect body). A read failure renders as an empty history.
+  const fetchHistory = useCallback(
+    () => listConsentHistory(playerPersonId).catch(() => [] as MediaConsentRow[]),
+    [playerPersonId],
+  );
 
   useEffect(() => {
-    void loadHistory();
-  }, [loadHistory]);
+    let cancelled = false;
+    fetchHistory().then((rows) => {
+      if (cancelled) return;
+      setHistory(rows);
+      setHistoryLoaded(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchHistory]);
 
   const handleToggle = async (granted: boolean) => {
     setSubmitting(true);
@@ -59,7 +64,8 @@ export function MediaConsentSection({
       // Re-read the effective state from the server — no optimistic flip.
       const fresh = await getEffectiveConsent(playerPersonId);
       onConsentChange(fresh);
-      await loadHistory();
+      setHistory(await fetchHistory());
+      setHistoryLoaded(true);
       setNote('');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to update media consent');

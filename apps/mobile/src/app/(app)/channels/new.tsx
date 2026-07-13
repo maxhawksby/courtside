@@ -1,5 +1,5 @@
 import { Stack, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -37,7 +37,6 @@ export default function NewChannelScreen() {
   // Shared: org members (self excluded), used by both the DM picker and the
   // team-channel multi-select.
   const [members, setMembers] = useState<UserProfileWithPerson[]>([]);
-  const [membersLoading, setMembersLoading] = useState(true);
   const [membersError, setMembersError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [myFirstName, setMyFirstName] = useState('Me');
@@ -49,60 +48,74 @@ export default function NewChannelScreen() {
   // Team-channel mode
   const [name, setName] = useState('');
   const [teamSeasonOptions, setTeamSeasonOptions] = useState<TeamSeasonOption[]>([]);
-  const [teamSeasonsLoading, setTeamSeasonsLoading] = useState(true);
   const [selectedTeamSeasonId, setSelectedTeamSeasonId] = useState<string | null>(null);
   const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(new Set());
   const [isReadOnly, setIsReadOnly] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [teamError, setTeamError] = useState<string | null>(null);
 
-  const loadMembers = useCallback(async () => {
-    if (!activeOrg || !user) return;
-    setMembersLoading(true);
-    setMembersError(null);
-    try {
-      const rows = await listOrgUserProfiles(activeOrg.id);
-      setMembers(rows.filter((p) => p.user_id !== user.id));
-    } catch (e) {
-      setMembersError(e instanceof Error ? e.message : 'Could not load members');
-    } finally {
-      setMembersLoading(false);
-    }
-  }, [activeOrg, user]);
+  // Both loading flags are derived: a fetch is pending until the current
+  // org (+user) combination settles, so the effects never set state
+  // synchronously. If the guards keep us from fetching, they stay true
+  // forever — same as the previous initial-true behavior.
+  const membersKey = `${activeOrg?.id ?? ''}|${user?.id ?? ''}`;
+  const [membersSettledKey, setMembersSettledKey] = useState<string | null>(null);
+  const membersLoading = membersSettledKey !== membersKey;
+  const [teamSeasonsSettledFor, setTeamSeasonsSettledFor] = useState<string | null>(null);
+  const teamSeasonsLoading = teamSeasonsSettledFor !== (activeOrg?.id ?? '');
 
-  const loadTeamSeasonOptions = useCallback(async () => {
+  useEffect(() => {
+    if (!activeOrg || !user) return;
+    let cancelled = false;
+    listOrgUserProfiles(activeOrg.id)
+      .then((rows) => {
+        if (cancelled) return;
+        setMembers(rows.filter((p) => p.user_id !== user.id));
+        setMembersError(null);
+      })
+      .catch((e) => {
+        if (!cancelled) setMembersError(e instanceof Error ? e.message : 'Could not load members');
+      })
+      .finally(() => {
+        if (!cancelled) setMembersSettledKey(membersKey);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeOrg, user, membersKey]);
+
+  useEffect(() => {
     if (!activeOrg) return;
-    setTeamSeasonsLoading(true);
-    try {
-      const seasons = await listSeasons(activeOrg.id);
-      if (seasons.length === 0) {
-        setTeamSeasonOptions([]);
-        return;
-      }
+    let cancelled = false;
+    const orgId = activeOrg.id;
+    (async (): Promise<TeamSeasonOption[]> => {
+      const seasons = await listSeasons(orgId);
+      if (seasons.length === 0) return [];
       // listSeasons orders newest-first — the first row is the current season.
       const currentSeason = seasons[0];
       const [teamSeasons, teams] = await Promise.all([
-        listTeamSeasons(activeOrg.id, currentSeason.id),
-        listTeams(activeOrg.id),
+        listTeamSeasons(orgId, currentSeason.id),
+        listTeams(orgId),
       ]);
       const teamNameById = new Map(teams.map((t) => [t.id, t.name]));
-      setTeamSeasonOptions(
-        teamSeasons.map((ts) => ({
-          teamSeasonId: ts.id,
-          teamName: teamNameById.get(ts.team_id) ?? 'Unknown team',
-        })),
-      );
-    } catch (e) {
-      setTeamError(e instanceof Error ? e.message : 'Could not load teams');
-    } finally {
-      setTeamSeasonsLoading(false);
-    }
+      return teamSeasons.map((ts) => ({
+        teamSeasonId: ts.id,
+        teamName: teamNameById.get(ts.team_id) ?? 'Unknown team',
+      }));
+    })()
+      .then((options) => {
+        if (!cancelled) setTeamSeasonOptions(options);
+      })
+      .catch((e) => {
+        if (!cancelled) setTeamError(e instanceof Error ? e.message : 'Could not load teams');
+      })
+      .finally(() => {
+        if (!cancelled) setTeamSeasonsSettledFor(orgId);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [activeOrg]);
-
-  useEffect(() => {
-    void loadMembers();
-    void loadTeamSeasonOptions();
-  }, [loadMembers, loadTeamSeasonOptions]);
 
   useEffect(() => {
     if (!activeOrg) return;

@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -35,7 +35,11 @@ export default function NewEventScreen() {
   const [type, setType] = useState<EventType>('game');
   const [title, setTitle] = useState('');
   const [teamOptions, setTeamOptions] = useState<TeamOption[]>([]);
-  const [loadingTeams, setLoadingTeams] = useState(true);
+  // Derived: teams are loading until the fetch for the current org settles,
+  // so the effect never sets state synchronously. Stays true forever if there
+  // is no active org — same as the previous initial-true behavior.
+  const [teamsSettledFor, setTeamsSettledFor] = useState<string | null>(null);
+  const loadingTeams = teamsSettledFor !== (activeOrg?.id ?? '');
   const [teamSeasonId, setTeamSeasonId] = useState<string | null>(null);
   const [startsAt, setStartsAt] = useState('');
   const [arrivalAt, setArrivalAt] = useState('');
@@ -45,40 +49,41 @@ export default function NewEventScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadTeams = useCallback(async () => {
+  useEffect(() => {
     if (!activeOrg) return;
-    setLoadingTeams(true);
-    try {
-      const seasons = await listSeasons(activeOrg.id);
-      if (seasons.length === 0) {
-        setTeamOptions([]);
-        return;
-      }
+    let cancelled = false;
+    const orgId = activeOrg.id;
+    (async (): Promise<TeamOption[]> => {
+      const seasons = await listSeasons(orgId);
+      if (seasons.length === 0) return [];
       // listSeasons orders newest-first; the current season is the first row.
       const season = seasons[0];
       const [teamSeasons, teams] = await Promise.all([
-        listTeamSeasons(activeOrg.id, season.id),
-        listTeams(activeOrg.id),
+        listTeamSeasons(orgId, season.id),
+        listTeams(orgId),
       ]);
       const teamsById = new Map(teams.map((t) => [t.id, t]));
-      const options = teamSeasons
+      return teamSeasons
         .map((ts) => {
           const team = teamsById.get(ts.team_id);
           return team ? { teamSeasonId: ts.id, teamName: team.name } : null;
         })
         .filter((o): o is TeamOption => o !== null)
         .sort((a, b) => a.teamName.localeCompare(b.teamName));
-      setTeamOptions(options);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not load teams');
-    } finally {
-      setLoadingTeams(false);
-    }
+    })()
+      .then((options) => {
+        if (!cancelled) setTeamOptions(options);
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : 'Could not load teams');
+      })
+      .finally(() => {
+        if (!cancelled) setTeamsSettledFor(orgId);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [activeOrg]);
-
-  useEffect(() => {
-    void loadTeams();
-  }, [loadTeams]);
 
   const handleSubmit = async () => {
     if (!activeOrg) return;

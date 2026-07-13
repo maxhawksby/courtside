@@ -39,7 +39,6 @@ export function GrantRoleSheet({ visible, onClose, orgId, onGranted }: GrantRole
   const theme = useTheme();
 
   const [members, setMembers] = useState<UserProfileWithPerson[]>([]);
-  const [membersLoading, setMembersLoading] = useState(false);
   const [search, setSearch] = useState('');
   // Never preselected — including the signed-in owner — per safety rule 2.
   const [selectedMember, setSelectedMember] = useState<UserProfileWithPerson | null>(null);
@@ -48,50 +47,109 @@ export function GrantRoleSheet({ visible, onClose, orgId, onGranted }: GrantRole
 
   const [scopeType, setScopeType] = useState<RoleScope>('organization');
   const [divisions, setDivisions] = useState<DivisionRow[]>([]);
-  const [divisionsLoading, setDivisionsLoading] = useState(false);
   const [divisionId, setDivisionId] = useState<string | null>(null);
   const [teams, setTeams] = useState<TeamWithDivision[]>([]);
-  const [teamsLoading, setTeamsLoading] = useState(false);
   const [teamId, setTeamId] = useState<string | null>(null);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!visible) return;
-    setSearch('');
-    setSelectedMember(null);
-    setRole('coach');
-    setScopeType('organization');
-    setDivisionId(null);
-    setTeamId(null);
-    setError(null);
-    setSubmitting(false);
+  // Loading states are derived from "fetched for" keys so the fetch effects
+  // never set state synchronously. A null key means the next matching fetch
+  // effect run should fetch (and the spinner shows meanwhile).
+  const [membersFor, setMembersFor] = useState<string | null>(null);
+  const [divisionsFor, setDivisionsFor] = useState<string | null>(null);
+  const [teamsFor, setTeamsFor] = useState<string | null>(null);
+  const membersLoading = visible && membersFor !== orgId;
+  const divisionsLoading = visible && scopeType === 'division' && divisionsFor !== orgId;
+  const teamsLoading = visible && scopeType === 'team' && teamsFor !== orgId;
 
-    setMembersLoading(true);
+  // Reset the form on every open (adjust-state-during-render pattern instead
+  // of an effect). Clearing the "fetched for" keys makes the fetch effects
+  // below re-fetch fresh data for this session.
+  const openKey = visible ? orgId : null;
+  const [prevOpenKey, setPrevOpenKey] = useState<string | null>(null);
+  if (prevOpenKey !== openKey) {
+    setPrevOpenKey(openKey);
+    if (openKey !== null) {
+      setSearch('');
+      setSelectedMember(null);
+      setRole('coach');
+      setScopeType('organization');
+      setDivisionId(null);
+      setTeamId(null);
+      setError(null);
+      setSubmitting(false);
+      setMembersFor(null);
+      setDivisionsFor(null);
+      setTeamsFor(null);
+    }
+  }
+
+  const handleScopeChange = (next: RoleScope) => {
+    // Re-tapping the active segment must stay a no-op (it was under the old
+    // direct setScopeType, via the same-value bailout).
+    if (next === scopeType) return;
+    setScopeType(next);
+    // Re-fetch scope options on every scope switch (matches the previous
+    // effect-per-switch behavior; keeps division/team lists fresh).
+    setDivisionsFor(null);
+    setTeamsFor(null);
+  };
+
+  useEffect(() => {
+    if (!visible || membersFor === orgId) return;
+    let cancelled = false;
     listOrgUserProfiles(orgId)
-      .then(setMembers)
-      .catch(() => setMembers([]))
-      .finally(() => setMembersLoading(false));
-  }, [visible, orgId]);
+      .then((rows) => {
+        if (!cancelled) setMembers(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setMembers([]);
+      })
+      .finally(() => {
+        if (!cancelled) setMembersFor(orgId);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [visible, orgId, membersFor]);
 
   useEffect(() => {
-    if (!visible || scopeType !== 'division') return;
-    setDivisionsLoading(true);
+    if (!visible || scopeType !== 'division' || divisionsFor === orgId) return;
+    let cancelled = false;
     listDivisions(orgId)
-      .then(setDivisions)
-      .catch(() => setDivisions([]))
-      .finally(() => setDivisionsLoading(false));
-  }, [visible, scopeType, orgId]);
+      .then((rows) => {
+        if (!cancelled) setDivisions(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setDivisions([]);
+      })
+      .finally(() => {
+        if (!cancelled) setDivisionsFor(orgId);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [visible, scopeType, orgId, divisionsFor]);
 
   useEffect(() => {
-    if (!visible || scopeType !== 'team') return;
-    setTeamsLoading(true);
+    if (!visible || scopeType !== 'team' || teamsFor === orgId) return;
+    let cancelled = false;
     listTeams(orgId)
-      .then(setTeams)
-      .catch(() => setTeams([]))
-      .finally(() => setTeamsLoading(false));
-  }, [visible, scopeType, orgId]);
+      .then((rows) => {
+        if (!cancelled) setTeams(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setTeams([]);
+      })
+      .finally(() => {
+        if (!cancelled) setTeamsFor(orgId);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [visible, scopeType, orgId, teamsFor]);
 
   const filteredMembers = members.filter((member) => {
     if (!search.trim()) return true;
@@ -206,7 +264,7 @@ export function GrantRoleSheet({ visible, onClose, orgId, onGranted }: GrantRole
             <ThemedText type="small" themeColor="textSecondary">
               Scope
             </ThemedText>
-            <SegmentedControl options={SCOPE_OPTIONS} value={scopeType} onChange={setScopeType} />
+            <SegmentedControl options={SCOPE_OPTIONS} value={scopeType} onChange={handleScopeChange} />
 
             {scopeType === 'division' && (
               <View style={styles.pickerBlock}>

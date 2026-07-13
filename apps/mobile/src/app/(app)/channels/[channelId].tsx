@@ -44,7 +44,6 @@ export default function ChannelDetailScreen() {
   const [channel, setChannel] = useState<ChannelRow | null>(null);
   const [members, setMembers] = useState<ChannelMemberWithPerson[]>([]);
   const [messages, setMessages] = useState<MessageRow[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -56,34 +55,44 @@ export default function ChannelDetailScreen() {
   const [membersVisible, setMembersVisible] = useState(false);
   const [muted, setMuted] = useState(false);
 
-  const load = useCallback(async () => {
-    if (!activeOrg || !channelId) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const [channels, memberRows, messageRows] = await Promise.all([
-        listChannels(activeOrg.id),
-        listChannelMembers(channelId),
-        listMessages(channelId, { limit: PAGE_SIZE }),
-      ]);
-      const found = channels.find((c) => c.id === channelId) ?? null;
-      setChannel(found);
-      setMembers(memberRows);
-      setMessages(messageRows);
-      setHasMore(messageRows.length === PAGE_SIZE);
-      const mine = memberRows.find((m) => m.user_id === user?.id);
-      setMuted(mine?.muted ?? false);
-      if (!found) setError('Channel not found');
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not load channel');
-    } finally {
-      setLoading(false);
-    }
-  }, [activeOrg, channelId, user?.id]);
+  // Loading is derived: the screen is loading until the fetch for the current
+  // org/channel/user combination settles, so the effect never sets state
+  // synchronously. If the guard below keeps us from fetching, this stays true
+  // forever — same as the previous behavior.
+  const userId = user?.id;
+  const loadKey = `${activeOrg?.id ?? ''}|${channelId ?? ''}|${userId ?? ''}`;
+  const [settledLoadKey, setSettledLoadKey] = useState<string | null>(null);
+  const loading = settledLoadKey !== loadKey;
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (!activeOrg || !channelId) return;
+    let cancelled = false;
+    Promise.all([
+      listChannels(activeOrg.id),
+      listChannelMembers(channelId),
+      listMessages(channelId, { limit: PAGE_SIZE }),
+    ])
+      .then(([channels, memberRows, messageRows]) => {
+        if (cancelled) return;
+        const found = channels.find((c) => c.id === channelId) ?? null;
+        setChannel(found);
+        setMembers(memberRows);
+        setMessages(messageRows);
+        setHasMore(messageRows.length === PAGE_SIZE);
+        const mine = memberRows.find((m) => m.user_id === userId);
+        setMuted(mine?.muted ?? false);
+        setError(found ? null : 'Channel not found');
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : 'Could not load channel');
+      })
+      .finally(() => {
+        if (!cancelled) setSettledLoadKey(loadKey);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeOrg, channelId, userId, loadKey]);
 
   // Mark read once per channel visit.
   useEffect(() => {

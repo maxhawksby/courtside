@@ -28,8 +28,12 @@ export function AddToRosterPanel({ orgId, teamSeasonId, onAdded, onClose }: AddT
   const theme = useTheme();
   const [search, setSearch] = useState('');
   const [results, setResults] = useState<PersonRow[]>([]);
-  const [searching, setSearching] = useState(false);
+  // Searching is derived: a fetch is pending until the current org+query
+  // combination settles, so the effect never sets state synchronously.
+  const [settledSearchKey, setSettledSearchKey] = useState<string | null>(null);
   const [selectedPerson, setSelectedPerson] = useState<PersonRow | null>(null);
+  const searchKey = `${orgId}|${search}`;
+  const searching = !selectedPerson && settledSearchKey !== searchKey;
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [role, setRole] = useState<RosterMembershipRow['role']>('player');
@@ -40,19 +44,18 @@ export function AddToRosterPanel({ orgId, teamSeasonId, onAdded, onClose }: AddT
   useEffect(() => {
     if (selectedPerson) return;
     let cancelled = false;
-    setSearching(true);
     listPersons(orgId, search)
       .then((people) => {
         if (!cancelled) setResults(people);
       })
       .catch(() => {})
       .finally(() => {
-        if (!cancelled) setSearching(false);
+        if (!cancelled) setSettledSearchKey(searchKey);
       });
     return () => {
       cancelled = true;
     };
-  }, [orgId, search, selectedPerson]);
+  }, [orgId, search, selectedPerson, searchKey]);
 
   const submit = async (personId: string) => {
     setSubmitting(true);
@@ -155,7 +158,13 @@ export function AddToRosterPanel({ orgId, teamSeasonId, onAdded, onClose }: AddT
           <ThemedText type="small">
             Selected: {selectedPerson.first_name} {selectedPerson.last_name}
           </ThemedText>
-          <Pressable onPress={() => setSelectedPerson(null)}>
+          <Pressable
+            onPress={() => {
+              // Clear the settled key too so deselecting shows the search
+              // spinner while the (re-run) fetch is in flight, as before.
+              setSettledSearchKey(null);
+              setSelectedPerson(null);
+            }}>
             <ThemedText type="link" themeColor="textSecondary">
               Change person
             </ThemedText>

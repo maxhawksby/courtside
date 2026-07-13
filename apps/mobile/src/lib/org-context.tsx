@@ -28,10 +28,19 @@ const OrgContext = createContext<OrgContextValue | undefined>(undefined);
 
 export function OrgProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const userId = user?.id ?? null;
   const [orgs, setOrgs] = useState<OrganizationRow[]>([]);
   const [activeOrg, setActive] = useState<OrganizationRow | null>(null);
-  const [loading, setLoading] = useState(true);
+  // `undefined` = initial load not settled yet; a user id / null = the user
+  // the current org list was loaded for. Loading is derived so the effect
+  // never has to set state synchronously.
+  const [loadedForUser, setLoadedForUser] = useState<string | null | undefined>(undefined);
+  const loading = loadedForUser === undefined || loadedForUser !== userId;
 
+  // For external callers (event handlers, e.g. after creating an org). The
+  // initial/user-change load below is a separate promise chain because the
+  // lint rule forbids effects from synchronously calling state-setting
+  // functions like this one.
   const refreshOrgs = useCallback(async (): Promise<OrganizationRow[]> => {
     if (!user) {
       setOrgs([]);
@@ -48,16 +57,28 @@ export function OrgProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    refreshOrgs()
+    const load = !user
+      ? Promise.resolve().then(() => {
+          if (cancelled) return;
+          setOrgs([]);
+          setActive(null);
+        })
+      : getMyOrganizations().then(async (list) => {
+          if (cancelled) return;
+          setOrgs(list);
+          const storedId = await AsyncStorage.getItem(ACTIVE_ORG_KEY);
+          if (cancelled) return;
+          setActive(list.find((o) => o.id === storedId) ?? list[0] ?? null);
+        });
+    load
       .catch(() => {})
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setLoadedForUser(userId);
       });
     return () => {
       cancelled = true;
     };
-  }, [refreshOrgs]);
+  }, [user, userId]);
 
   const setActiveOrg = useCallback(async (org: OrganizationRow) => {
     setActive(org);
