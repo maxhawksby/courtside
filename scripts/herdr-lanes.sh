@@ -43,8 +43,8 @@ done
 
 # --- herdr workspaces (one per lane) ------------------------------------------
 # workspace list/create emit JSON; extract ids with sed (no jq dependency).
-ws_id_for_label() { # $1 = label
-  herdr workspace list | tr '}' '\n' | grep -F "\"label\":\"$1\"" | sed -n 's/.*"workspace_id":"\([^"]*\)".*/\1/p' | head -1
+ws_id_for_label() { # $1 = label (empty output when not found)
+  herdr workspace list | tr '}' '\n' | { grep -F "\"label\":\"$1\"" || true; } | sed -n 's/.*"workspace_id":"\([^"]*\)".*/\1/p' | head -1
 }
 
 declare -A PANE
@@ -71,7 +71,7 @@ PM_PANE_VAL="${HERDR_PANE_ID:-w2:p1}"
 
 # --- launch or resume lane Claudes --------------------------------------------
 agent_in_pane() { # $1 = pane id -> prints agent_status or nothing
-  herdr agent list | tr '}' '\n' | grep -F "\"pane_id\":\"$1\"" | sed -n 's/.*"agent_status":"\([^"]*\)".*/\1/p' | head -1
+  herdr agent list | tr '}' '\n' | { grep -F "\"pane_id\":\"$1\"" || true; } | sed -n 's/.*"agent_status":"\([^"]*\)".*/\1/p' | head -1
 }
 
 for L in "${LANES[@]}"; do
