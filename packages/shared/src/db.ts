@@ -1,7 +1,13 @@
 /**
- * Hand-written row types mirroring supabase/migrations/20260709000001_schema_v1.sql.
- * CONTRACT FILE. Replace with `supabase gen types` output once a database is
- * linked; until then, keep 1:1 with the migration (PM updates both together).
+ * Row types, aliased over the generated DB types. CONTRACT FILE.
+ *
+ * db.generated.ts (output of `supabase gen types`) is the source of truth for
+ * column presence and nullability; regenerate it after any migration —
+ * scripts/check-db-types.sh fails the build on drift. Text columns constrained
+ * by CHECK (role, status, type, ...) generate as plain `string` and jsonb
+ * generates as `Json`, so the aliases below re-narrow those columns to the
+ * curated app-level unions/shapes. Every exported name keeps exactly the shape
+ * it had as a hand-written interface — zero import churn for consumers.
  */
 
 import type {
@@ -13,238 +19,82 @@ import type {
   RoleScope,
   RsvpStatus,
 } from './index';
+import type { Database, Tables } from './db.generated';
 
-export interface OrganizationRow {
-  id: string;
-  name: string;
-  slug: string;
-  branding: Record<string, unknown>;
-  created_at: string;
-}
+/**
+ * A generated Row with named columns re-narrowed. The Overrides constraint
+ * rejects keys that are not real columns, so a renamed/dropped column breaks
+ * the alias here instead of silently widening downstream.
+ */
+type Narrowed<
+  TableName extends keyof Database['public']['Tables'],
+  Overrides extends { [K in keyof Tables<TableName>]?: unknown },
+> = Omit<Tables<TableName>, keyof Overrides> & Overrides;
 
-export interface DivisionRow {
-  id: string;
-  organization_id: string;
-  name: string;
-  sort_order: number;
-  created_at: string;
-}
+export type OrganizationRow = Narrowed<'organizations', { branding: Record<string, unknown> }>;
 
-export interface SeasonRow {
-  id: string;
-  organization_id: string;
-  name: string;
-  starts_on: string | null;
-  ends_on: string | null;
-  created_at: string;
-}
+export type DivisionRow = Tables<'divisions'>;
 
-export interface TeamRow {
-  id: string;
-  organization_id: string;
-  division_id: string | null;
-  name: string;
-  created_at: string;
-  archived_at: string | null;
-}
+export type SeasonRow = Tables<'seasons'>;
 
-export interface TeamSeasonRow {
-  id: string;
-  organization_id: string;
-  team_id: string;
-  season_id: string;
-  created_at: string;
-}
+export type TeamRow = Tables<'teams'>;
 
-export interface PersonRow {
-  id: string;
-  organization_id: string;
-  first_name: string;
-  last_name: string;
-  date_of_birth: string | null;
-  email: string | null;
-  phone: string | null;
-  photo_path: string | null;
-  custom_fields: Record<string, unknown>;
-  created_at: string;
-  updated_at: string;
-}
+export type TeamSeasonRow = Tables<'team_seasons'>;
 
-export interface PersonSensitiveRow {
-  person_id: string;
-  organization_id: string;
-  medical_notes: string | null;
-  emergency_contact: Record<string, unknown> | null;
-  updated_at: string;
-}
+export type PersonRow = Narrowed<'persons', { custom_fields: Record<string, unknown> }>;
 
-export interface HouseholdRow {
-  id: string;
-  organization_id: string;
-  name: string;
-  created_at: string;
-}
+export type PersonSensitiveRow = Narrowed<
+  'persons_sensitive',
+  { emergency_contact: Record<string, unknown> | null }
+>;
 
-export interface HouseholdMemberRow {
-  household_id: string;
-  person_id: string;
-  organization_id: string;
-  is_owner: boolean;
-}
+export type HouseholdRow = Tables<'households'>;
 
-export interface GuardianshipRow {
-  id: string;
-  organization_id: string;
-  guardian_person_id: string;
-  player_person_id: string;
-  relationship: string | null;
-  created_at: string;
-}
+export type HouseholdMemberRow = Tables<'household_members'>;
 
-export interface UserProfileRow {
-  user_id: string;
-  person_id: string;
-  organization_id: string;
-  created_at: string;
-}
+export type GuardianshipRow = Tables<'guardianships'>;
 
-export interface OrgRoleRow {
-  id: string;
-  organization_id: string;
-  user_id: string;
-  role: OrgRole;
-  scope_type: RoleScope;
-  division_id: string | null;
-  team_id: string | null;
-  created_at: string;
-}
+export type UserProfileRow = Tables<'user_profiles'>;
 
-export interface InviteRow {
-  id: string;
-  organization_id: string;
-  email: string;
-  person_id: string | null;
-  role: Exclude<OrgRole, 'owner'>;
-  scope_type: RoleScope;
-  division_id: string | null;
-  team_id: string | null;
-  token: string;
-  expires_at: string;
-  accepted_at: string | null;
-  accepted_by: string | null;
-  created_by: string;
-  created_at: string;
-}
+export type OrgRoleRow = Narrowed<'org_roles', { role: OrgRole; scope_type: RoleScope }>;
 
-export interface RosterMembershipRow {
-  id: string;
-  organization_id: string;
-  team_season_id: string;
-  person_id: string;
-  role: 'player' | 'coach' | 'scorekeeper';
-  jersey_number: string | null;
-  created_at: string;
-}
+export type InviteRow = Narrowed<
+  'invites',
+  { role: Exclude<OrgRole, 'owner'>; scope_type: RoleScope }
+>;
 
-export interface EventRow {
-  id: string;
-  organization_id: string;
-  team_season_id: string | null;
-  type: EventType;
-  title: string | null;
-  starts_at: string;
-  arrival_at: string | null;
-  ends_at: string | null;
-  location: string | null;
-  notes: string | null;
-  recurrence: Record<string, unknown> | null;
-  created_by: string | null;
-  created_at: string;
-  updated_at: string;
-}
+export type RosterMembershipRow = Narrowed<
+  'roster_memberships',
+  { role: 'player' | 'coach' | 'scorekeeper' }
+>;
 
-export interface RsvpRow {
-  id: string;
-  organization_id: string;
-  event_id: string;
-  person_id: string;
-  status: RsvpStatus;
-  responded_by: string | null;
-  updated_at: string;
-}
+export type EventRow = Narrowed<
+  'events',
+  { type: EventType; recurrence: Record<string, unknown> | null }
+>;
 
-export interface GameRow {
-  id: string;
-  organization_id: string;
-  event_id: string;
-  team_season_id: string;
-  opponent_name: string;
-  is_home: boolean;
-  period_format: PeriodFormat;
-  opponent_scoring_mode: OpponentScoringMode;
-  status: 'scheduled' | 'live' | 'final';
-  scorekeeper_user_id: string | null;
-  created_at: string;
-  updated_at: string;
-}
+export type RsvpRow = Narrowed<'rsvps', { status: RsvpStatus }>;
 
-export interface GameEventRow {
-  id: string;
-  organization_id: string;
-  game_id: string;
-  client_uuid: string;
-  device_id: string;
-  client_seq: number;
-  event_type: GameEventType;
-  period: number;
-  clock_seconds: number | null;
-  person_id: string | null;
-  opponent_player: string | null;
-  payload: Record<string, unknown>;
-  voided_at: string | null;
-  voided_by: string | null;
-  created_at: string;
-}
+export type GameRow = Narrowed<
+  'games',
+  {
+    period_format: PeriodFormat;
+    opponent_scoring_mode: OpponentScoringMode;
+    status: 'scheduled' | 'live' | 'final';
+  }
+>;
 
-export interface ChannelRow {
-  id: string;
-  organization_id: string;
-  team_season_id: string | null;
-  name: string;
-  is_all_hands: boolean;
-  is_read_only: boolean;
-  created_by: string | null;
-  created_at: string;
-}
+export type GameEventRow = Narrowed<
+  'game_events',
+  { event_type: GameEventType; payload: Record<string, unknown> }
+>;
 
-export interface ChannelMemberRow {
-  channel_id: string;
-  user_id: string;
-  organization_id: string;
-  muted: boolean;
-  last_read_at: string | null;
-}
+export type ChannelRow = Tables<'channels'>;
 
-export interface MessageRow {
-  id: string;
-  organization_id: string;
-  channel_id: string;
-  sender_user_id: string;
-  body: string | null;
-  media_paths: string[];
-  /** SafeSport audit flag: sent 8pm–8am sender-local (see shared isOutOfHours). */
-  out_of_hours: boolean;
-  created_at: string;
-  deleted_at: string | null;
-  deleted_by: string | null;
-}
+export type ChannelMemberRow = Tables<'channel_members'>;
 
-export interface MediaConsentRow {
-  id: string;
-  organization_id: string;
-  player_person_id: string;
-  granted_by_user_id: string;
-  granted: boolean;
-  note: string | null;
-  created_at: string;
-}
+// messages.out_of_hours is the SafeSport audit flag: sent 8pm–8am sender-local
+// (see shared isOutOfHours).
+export type MessageRow = Tables<'messages'>;
+
+export type MediaConsentRow = Tables<'media_consents'>;
