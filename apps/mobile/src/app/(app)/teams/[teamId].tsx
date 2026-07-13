@@ -11,14 +11,15 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { PrimaryButton } from '@/components/ui/primary-button';
 import { RosterRow } from '@/features/teams/components/roster-row';
 import {
+  archiveTeam,
   createSeason,
   createTeamSeason,
-  deleteTeam,
   getRoster,
   listMyRoles,
   listSeasons,
   listTeams,
   listTeamSeasons,
+  unarchiveTeam,
   type RosterEntry,
   type TeamWithDivision,
 } from '@/lib/data';
@@ -37,10 +38,10 @@ export default function TeamDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddPanel, setShowAddPanel] = useState(false);
-  // UI gate only — RLS `teams_write` is the real check on delete.
+  // UI gate only — RLS `teams_update` is the real check on archive/unarchive.
   const [canManageTeam, setCanManageTeam] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [archiveBusy, setArchiveBusy] = useState(false);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!activeOrg || !teamId) return;
@@ -48,7 +49,9 @@ export default function TeamDetailScreen() {
     setError(null);
     try {
       const [teams, myRoles] = await Promise.all([
-        listTeams(activeOrg.id),
+        // includeArchived so an archived team stays viewable (and unarchivable)
+        // here even though default lists hide it.
+        listTeams(activeOrg.id, { includeArchived: true }),
         listMyRoles(activeOrg.id),
       ]);
       setCanManageTeam(myRoles.some((r) => r.role === 'owner' || r.role === 'division_admin'));
@@ -104,30 +107,44 @@ export default function TeamDetailScreen() {
     setShowAddPanel(false);
   }, [teamSeasonId]);
 
-  const doDelete = useCallback(async () => {
+  const doArchive = useCallback(async () => {
     if (!teamId) return;
-    setDeleting(true);
-    setDeleteError(null);
+    setArchiveBusy(true);
+    setArchiveError(null);
     try {
-      await deleteTeam(teamId);
-      router.back(); // Teams list reloads on focus.
+      await archiveTeam(teamId);
+      router.back(); // Teams list reloads on focus; archived team drops out of the default list.
     } catch (e) {
-      setDeleteError(e instanceof Error ? e.message : 'Could not delete team');
-      setDeleting(false);
+      setArchiveError(e instanceof Error ? e.message : 'Could not archive team');
+      setArchiveBusy(false);
     }
   }, [teamId, router]);
 
-  const handleDelete = useCallback(() => {
+  const handleArchive = useCallback(() => {
     if (!team) return;
     Alert.alert(
-      'Delete team',
-      `Permanently delete ${team.name}? This also removes its seasons, rosters, schedule, games, and team chat history. This can't be undone.`,
+      'Archive team',
+      `Archive ${team.name}? Archiving hides the team from team lists, but its roster, schedule, and chat history are all preserved. No data is deleted, and you can unarchive it at any time.`,
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => void doDelete() },
+        { text: 'Archive', onPress: () => void doArchive() },
       ],
     );
-  }, [team, doDelete]);
+  }, [team, doArchive]);
+
+  const doUnarchive = useCallback(async () => {
+    if (!teamId) return;
+    setArchiveBusy(true);
+    setArchiveError(null);
+    try {
+      await unarchiveTeam(teamId);
+      await load(); // Stay on the screen; banner clears once archived_at is null again.
+    } catch (e) {
+      setArchiveError(e instanceof Error ? e.message : 'Could not unarchive team');
+    } finally {
+      setArchiveBusy(false);
+    }
+  }, [teamId, load]);
 
   if (!activeOrg) {
     return (
@@ -157,6 +174,8 @@ export default function TeamDetailScreen() {
     );
   }
 
+  const archived = team.archived_at !== null;
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -166,6 +185,28 @@ export default function TeamDetailScreen() {
             {team.divisions?.name ?? 'No division'}
           </ThemedText>
         </View>
+
+        {archived && (
+          <ThemedView type="backgroundElement" style={styles.archivedBanner}>
+            <View style={styles.archivedBannerText}>
+              <ThemedText type="smallBold">Archived</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                Hidden from team lists. The roster, schedule, and chat history are preserved.
+              </ThemedText>
+            </View>
+            {canManageTeam &&
+              (archiveBusy ? (
+                <ActivityIndicator />
+              ) : (
+                <PrimaryButton label="Unarchive" onPress={() => void doUnarchive()} />
+              ))}
+            {archiveError ? (
+              <ThemedText type="small" themeColor="textSecondary">
+                {archiveError}
+              </ThemedText>
+            ) : null}
+          </ThemedView>
+        )}
 
         <View style={styles.section}>
           <View style={styles.headerRow}>
@@ -198,20 +239,20 @@ export default function TeamDetailScreen() {
           )}
         </View>
 
-        {canManageTeam && (
+        {canManageTeam && !archived && (
           <View style={styles.dangerSection}>
-            <Pressable onPress={handleDelete} disabled={deleting} hitSlop={8}>
-              {deleting ? (
+            <Pressable onPress={handleArchive} disabled={archiveBusy} hitSlop={8}>
+              {archiveBusy ? (
                 <ActivityIndicator />
               ) : (
-                <ThemedText type="small" style={styles.deleteText}>
-                  Delete team
+                <ThemedText type="small" style={styles.archiveText}>
+                  Archive team
                 </ThemedText>
               )}
             </Pressable>
-            {deleteError ? (
+            {archiveError ? (
               <ThemedText type="small" themeColor="textSecondary">
-                {deleteError}
+                {archiveError}
               </ThemedText>
             ) : null}
           </View>
@@ -248,9 +289,17 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     marginTop: Spacing.four,
   },
-  deleteText: {
+  archiveText: {
     color: Brand.danger,
     fontWeight: '600',
+  },
+  archivedBanner: {
+    borderRadius: Spacing.two,
+    padding: Spacing.three,
+    gap: Spacing.three,
+  },
+  archivedBannerText: {
+    gap: Spacing.one,
   },
   centered: {
     flex: 1,

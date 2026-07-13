@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -34,20 +34,21 @@ export default function TeamsIndexScreen() {
   const [teams, setTeams] = useState<TeamWithDivision[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
 
   const load = useCallback(async () => {
     if (!activeOrg) return;
     setLoading(true);
     setError(null);
     try {
-      const rows = await listTeams(activeOrg.id);
+      const rows = await listTeams(activeOrg.id, { includeArchived: showArchived });
       setTeams(rows);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not load teams');
     } finally {
       setLoading(false);
     }
-  }, [activeOrg]);
+  }, [activeOrg, showArchived]);
 
   // Reload whenever the screen gains focus so teams created on pushed
   // screens appear when the user navigates back (Stack keeps this screen
@@ -100,8 +101,12 @@ export default function TeamsIndexScreen() {
 
         {!loading && !error && teams.length === 0 && (
           <EmptyState
-            title="No teams yet"
-            body="Teams group your players and coaches by season. Create a team to start building a roster, tracking games, and messaging."
+            title={showArchived ? 'No teams' : 'No teams yet'}
+            body={
+              showArchived
+                ? 'This organization has no teams, archived or active.'
+                : 'Teams group your players and coaches by season. Create a team to start building a roster, tracking games, and messaging.'
+            }
           />
         )}
 
@@ -123,6 +128,14 @@ export default function TeamsIndexScreen() {
               </View>
             </View>
           ))}
+
+        {!loading && !error && (
+          <Pressable onPress={() => setShowArchived((v) => !v)} hitSlop={8}>
+            <ThemedText type="small" themeColor="textSecondary" style={styles.archivedToggle}>
+              {showArchived ? 'Hide archived teams' : 'Show archived teams'}
+            </ThemedText>
+          </Pressable>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -152,5 +165,9 @@ const styles = StyleSheet.create({
   },
   groupRows: {
     gap: Spacing.two,
+  },
+  archivedToggle: {
+    alignSelf: 'center',
+    paddingVertical: Spacing.two,
   },
 });
