@@ -73,11 +73,24 @@ export interface ParseRosterCsvResult {
   errors: RosterCsvError[];
 }
 
-const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const ISO_DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
+/**
+ * Strict YYYY-MM-DD check. `new Date(...)` alone is not enough: JS silently
+ * rolls over invalid calendar dates (2016-02-30 becomes 2016-03-01), so this
+ * round-trips the parsed components back through Date.UTC and rejects
+ * anything that didn't come back unchanged — catches bad days-in-month
+ * (Feb 30) and non-leap-year Feb 29 alike.
+ */
 function isValidIsoDate(value: string): boolean {
-  if (!ISO_DATE_RE.test(value)) return false;
-  return !Number.isNaN(new Date(`${value}T00:00:00Z`).getTime());
+  const match = ISO_DATE_RE.exec(value);
+  if (!match) return false;
+  const [, yearStr, monthStr, dayStr] = match;
+  const year = Number(yearStr);
+  const month = Number(monthStr);
+  const day = Number(dayStr);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
 }
 
 function blankToNull(value: string | undefined): string | null {
@@ -146,7 +159,16 @@ export function parseRosterCsv(text: string): ParseRosterCsvResult {
 
   const papaErrorLines = new Set<number>();
   for (const err of parsed.errors) {
-    const line = (err.row ?? 0) + 2;
+    // File-level errors (no `row`, e.g. an empty file) aren't tied to any
+    // data row, so they don't mark one as structurally malformed — and get
+    // a message a non-engineer can act on instead of papaparse's internal
+    // wording.
+    if (err.row == null) {
+      const message = err.code === 'UndetectableDelimiter' ? 'the CSV file is empty' : err.message;
+      errors.push({ line: 1, message });
+      continue;
+    }
+    const line = err.row + 2;
     papaErrorLines.add(line);
     errors.push({ line, message: err.message });
   }

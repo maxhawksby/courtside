@@ -147,4 +147,32 @@ describe('parseRosterCsv', () => {
       { line: 2, message: 'guardian2_* columns are only allowed on player rows' },
     ]);
   });
+
+  it('rejects calendar-rollover dates (Feb 30, and Feb 29 in a non-leap year)', () => {
+    const { rows, errors } = parseRosterCsv(
+      'first_name,last_name,date_of_birth,role,guardian1_first_name,guardian1_last_name\n' +
+        'A,Rollover,2016-02-30,player,G,Rollover\n' +
+        'B,Rollover,2015-02-29,player,G,Rollover\n',
+    );
+    expect(rows).toEqual([]);
+    expect(errors).toEqual([
+      { line: 2, message: 'date_of_birth "2016-02-30" is not a valid YYYY-MM-DD date' },
+      { line: 3, message: 'date_of_birth "2015-02-29" is not a valid YYYY-MM-DD date' },
+    ]);
+  });
+
+  it('accepts a genuine leap day', () => {
+    const { rows, errors } = parseRosterCsv(
+      'first_name,last_name,date_of_birth,role,guardian1_first_name,guardian1_last_name\n' +
+        'C,Leap,2016-02-29,player,G,Leap\n',
+    );
+    expect(errors).toEqual([]);
+    expect(rows[0]?.date_of_birth).toBe('2016-02-29');
+  });
+
+  it('gives a human-readable error for an empty file instead of raw papaparse text', () => {
+    const { rows, errors } = parseRosterCsv('');
+    expect(rows).toEqual([]);
+    expect(errors).toEqual([{ line: 1, message: 'the CSV file is empty' }]);
+  });
 });
