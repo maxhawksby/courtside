@@ -45,6 +45,10 @@ inside every session, including lanes.
   (and `db.generated.ts` once gen-types lands)
 - `apps/mobile/src/lib/supabase.ts`
 - `apps/mobile/src/lib/data/index.ts` and the domain files it re-exports
+- Design contracts: `apps/mobile/src/constants/theme.ts` (tokens) and the base
+  components (`apps/mobile/src/components/ui/**`, `themed-text`, `themed-view`).
+  These change via PM edit or PM-approved `design_proposal` (see `docs/DESIGN.md`
+  §5) — the proposal block replaces the contract ticket for design-only gaps.
 
 Rule: contracts change **only** via a PM-issued contract ticket executed by
 LANE-BE and line-reviewed by PM. LANE-FE treats main's contracts as read-only
@@ -70,7 +74,9 @@ Body.
 - `handoff` (lane→PM): must include branch, head SHA, commands run with results
   (db reset / tests / typecheck), `security_review:` — a list of files+line
   ranges touching RLS, auth, guardianships, consents, or messaging (or "none"),
-  and open questions.
+  and open questions. FE handoffs for UI tasks additionally carry
+  `design_brief:` and `design_review:` fields (defined in `LANE-FE.md`), and
+  `design_proposal:` blocks when the token system fell short (`docs/DESIGN.md` §5).
 - `question`/`answer` (lane↔lane): interface clarification only, answered from
   merged contract behavior. If the honest answer requires a contract change, the
   answer is "route to PM" plus a `question` to `to-pm.md`.

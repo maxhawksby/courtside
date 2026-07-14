@@ -32,6 +32,10 @@ proposals to PM (see §5).
   `textSecondary`. Five roles, both schemes — every screen must be designed in both.
 - **Brand** (scheme-independent): `primary #208AEF`, gradient stops `#3C9FFE → #0274DF`,
   `onPrimary`, `link`, `danger`, `imagePlaceholder`.
+  **Provisional (PM decision 2026-07-14):** the real brand palette will be derived from
+  the client's logo, arriving next development iteration. Until then `PrimaryButton`
+  deliberately stays neutral (`backgroundSelected`) — do not re-propose brand color on
+  buttons; the open `design_proposal` is parked, not forgotten.
 - **Fonts**: platform system fonts via `Platform.select` — **by design** (native feel,
   zero font-loading cost). This overrides the generic "never system fonts" rule: type
   personality here comes from scale, weight, and spacing, not typeface.

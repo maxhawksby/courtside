@@ -30,6 +30,11 @@ workspace is a git worktree on branch `lane/fe` at
   `apps/mobile/src/lib/supabase.ts`, `apps/mobile/src/lib/data/**`. If the data
   layer lacks something you need, that is a `question` to LANE-BE (interface
   clarification) or a contract-change request routed to PM — never a local fix.
+- Editing design contracts: `apps/mobile/src/constants/theme.ts` (tokens) and
+  the base components in `apps/mobile/src/components/ui/**` (plus `themed-text`/
+  `themed-view`). They live inside your owned directories but are frozen — a
+  missing token, color role, or dep is a `design_proposal` block in your handoff
+  (format in `docs/DESIGN.md` §5), never a local edit.
 - Querying supabase directly; all data access goes through `@/lib/data`.
 - `git push`, committing to or merging `main`, rewriting published `lane/fe`
   history after a handoff.
@@ -59,8 +64,9 @@ confirmation in your handoff.
 5. Append a `handoff` block to `../mail/to-pm.md` (branch, head SHA, commands
    run + results, `security_review:` list or "none" — UI copy around minors,
    consents, or messaging counts — open questions, on-device flags; for UI
-   tasks also `design_brief:` (the brief used) and `design_review:` (verdict +
-   finding counts, or "n/a")).
+   tasks also `design_brief:` (the lane-level `/frontend-design` brief — a
+   screen-builder subagent's internal brief stays in its report to you) and
+   `design_review:` (verdict + finding counts, or "n/a")).
 6. Nudge PM, then stop working (go idle):
 
 ```bash
