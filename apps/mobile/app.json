@@ -1,18 +1,18 @@
 {
   "expo": {
-    "name": "Courtside",
-    "slug": "courtside",
+    "name": "R&G Hoops",
+    "slug": "randg-hoops",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "mobile",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "bundleIdentifier": "com.courtside.app",
+      "bundleIdentifier": "com.randghoops.app",
       "icon": "./assets/expo.icon"
     },
     "android": {
-      "package": "com.courtside.app",
+      "package": "com.randghoops.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -39,6 +39,19 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ecf53bbb-7784-481a-a71f-4f958dc556ed"
+      }
+    },
+    "owner": "imitaites-team",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/ecf53bbb-7784-481a-a71f-4f958dc556ed"
     }
   }
 }
