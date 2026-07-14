@@ -72,8 +72,10 @@ The token palette is deliberately quiet, so craft goes into everything the token
 
 ## 5. Known gaps + proposal path
 
-The system is intentionally thin today. Not installed: `expo-linear-gradient`,
-`react-native-svg`, `moti`, `@expo-google-fonts` (only Reanimated 4 + `expo-font`). Not in
+The system is intentionally thin today. Installed and authorized for UI work:
+Reanimated 4, `expo-font`, `expo-linear-gradient`, `react-native-svg` (the latter two
+pre-authorized by PM decision 2026-07-14). Not installed: `moti`, `@expo-google-fonts` —
+the google-fonts one stays out on purpose; system fonts are a §2 design decision. Not in
 tokens: semantic success/warning colors, elevation/shadow scale, motion duration/easing
 tokens.
 
