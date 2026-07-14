@@ -48,7 +48,7 @@
     },
     "owner": "imitaites-team",
     "runtimeVersion": {
-      "policy": "appVersion"
+      "policy": "fingerprint"
     },
     "updates": {
       "url": "https://u.expo.dev/ecf53bbb-7784-481a-a71f-4f958dc556ed"
