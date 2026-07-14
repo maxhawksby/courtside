@@ -15,7 +15,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-MIN_TESTS=28 # floor = today's suite count; raise as RLS suites grow
+MIN_TESTS=35 # floor = today's suite count; raise as RLS suites grow
 
 say()  { printf '\033[1;34m[ci-db-tests]\033[0m %s\n' "$*"; }
 fail() { printf '\033[1;31m[ci-db-tests]\033[0m %s\n' "$*" >&2; exit 1; }
