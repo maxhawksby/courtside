@@ -38,7 +38,11 @@ function groupByDivision(teams: TeamWithDivision[]): { label: string; teams: Tea
 
 export default function TeamsIndexScreen() {
   const { activeOrg, loading: orgLoading } = useOrg();
-  const [teams, setTeams] = useState<TeamWithDivision[]>([]);
+  // Rows are stored with the org they were fetched for, so a stale list can
+  // never render under another org's screen (it derives to [] on mismatch).
+  const [teamsState, setTeamsState] = useState<{ orgId: string; rows: TeamWithDivision[] } | null>(
+    null,
+  );
   // Same semantics as org-context's loading (decision 2026-07-13-p14), screen-local:
   // the spinner shows only until the first fetch for the active org settles. Refocus
   // and filter refetches update the visible list in place — no flash.
@@ -46,27 +50,42 @@ export default function TeamsIndexScreen() {
   const [error, setError] = useState<string | null>(null);
   const [retrying, setRetrying] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
+  // Retry re-runs the focused effect below (its only fetch path), so every
+  // request is cancellation-guarded; bumping the nonce cancels any in-flight one.
+  const [reloadNonce, setReloadNonce] = useState(0);
 
-  const load = useCallback(async () => {
-    if (!activeOrg) return;
-    try {
-      const rows = await listTeams(activeOrg.id, { includeArchived: showArchived });
-      setTeams(rows);
-      setError(null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not load teams');
-    } finally {
-      setSettledOrgId(activeOrg.id);
-    }
-  }, [activeOrg, showArchived]);
-
-  // Reload whenever the screen gains focus so teams created on pushed
-  // screens appear when the user navigates back (Stack keeps this screen
-  // mounted, so a mount-only effect would show a stale list).
+  // Fetch on focus so teams created on pushed screens appear when the user
+  // navigates back (Stack keeps this screen mounted, so a mount-only effect
+  // would show a stale list). Cancellation per the house idiom
+  // (org-context.tsx): a superseded request must not commit any state.
   useFocusEffect(
     useCallback(() => {
-      void load();
-    }, [load]),
+      if (!activeOrg) return;
+      let cancelled = false;
+      const orgId = activeOrg.id;
+      listTeams(orgId, { includeArchived: showArchived })
+        .then((rows) => {
+          if (cancelled) return;
+          setTeamsState({ orgId, rows });
+          setError(null);
+        })
+        .catch((e: unknown) => {
+          if (cancelled) return;
+          setError(e instanceof Error ? e.message : 'Could not load teams');
+        })
+        .finally(() => {
+          if (cancelled) return;
+          // Also clears any retry-in-flight flag: an error card only renders
+          // after a request settles, so `retrying` can never be stuck true.
+          setSettledOrgId(orgId);
+          setRetrying(false);
+        });
+      return () => {
+        cancelled = true;
+      };
+      // reloadNonce is a deliberate re-run trigger (retry), never read in the body.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeOrg, showArchived, reloadNonce]),
   );
 
   if (orgLoading) {
@@ -88,8 +107,16 @@ export default function TeamsIndexScreen() {
   }
 
   const loading = settledOrgId !== activeOrg.id;
+  const teams = teamsState?.orgId === activeOrg.id ? teamsState.rows : [];
   const groups = groupByDivision(teams);
-  let cascadeIndex = 0;
+  // Running row offset per group, computed up front so cascade delays derive
+  // from map indices instead of a counter mutated during JSX evaluation.
+  let rowsBefore = 0;
+  const groupOffsets = groups.map((group) => {
+    const offset = rowsBefore;
+    rowsBefore += group.teams.length;
+    return offset;
+  });
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
@@ -118,7 +145,7 @@ export default function TeamsIndexScreen() {
               disabled={retrying}
               onPress={() => {
                 setRetrying(true);
-                void load().finally(() => setRetrying(false));
+                setReloadNonce((n) => n + 1);
               }}
             />
           </ThemedView>
@@ -135,20 +162,22 @@ export default function TeamsIndexScreen() {
           />
         )}
 
-        {/* A failed refetch keeps the last-known list visible below the error card. */}
+        {/* A failed same-org refetch keeps the last-known list visible below the
+            error card; cross-org staleness is impossible (`teams` derives to []). */}
         {!loading &&
           teams.length > 0 &&
-          groups.map((group) => (
+          groups.map((group, groupIndex) => (
             <View key={group.label} style={styles.group}>
               <ThemedText type="small" themeColor="textSecondary">
                 {group.label}
               </ThemedText>
               <View style={styles.groupRows}>
-                {group.teams.map((team) => (
+                {group.teams.map((team, rowIndex) => (
                   <Animated.View
                     key={team.id}
                     entering={FadeInDown.delay(
-                      Math.min(cascadeIndex++, ENTRANCE_STAGGER_CAP) * ENTRANCE_STAGGER_MS,
+                      Math.min(groupOffsets[groupIndex] + rowIndex, ENTRANCE_STAGGER_CAP) *
+                        ENTRANCE_STAGGER_MS,
                     ).duration(ENTRANCE_DURATION_MS)}>
                     <TeamListRow
                       team={team}
