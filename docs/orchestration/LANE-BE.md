@@ -57,7 +57,7 @@ PM line-reviews those hunks. Declaring "none" falsely is a protocol violation.
 
 ```bash
 source ../lanes.env
-herdr pane run "$PM_PANE" "[LANE-BE→PM] handoff appended to mail/to-pm.md: <TASK-ID>"
+herdr agent send "$PM_PANE" "[LANE-BE→PM] handoff appended to mail/to-pm.md: <TASK-ID>"
 ```
 
 Questions to LANE-FE (interface clarification only) go to `../mail/to-fe.md`

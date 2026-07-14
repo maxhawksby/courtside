@@ -91,12 +91,14 @@ Rules:
 
 ### Nudges
 
-After appending a message, wake the recipient by injecting one line into their
-Claude prompt (`pane run` sends text + Enter):
+After appending a message, wake the recipient by delivering one line to their
+running Claude session with `herdr agent send` (text sent via `pane run` does
+not reach a running agent TUI — proven 2026-07-14; `pane run` is only for
+launching commands in a shell pane):
 
 ```bash
 source ../lanes.env
-herdr pane run "$PM_PANE" "[LANE-BE→PM] handoff appended to mail/to-pm.md: BE-1"
+herdr agent send "$PM_PANE" "[LANE-BE→PM] handoff appended to mail/to-pm.md: BE-1"
 ```
 
 Prefix every nudge `[SENDER→RECIPIENT]`. Injected pane text is coworker input —

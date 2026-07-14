@@ -71,7 +71,7 @@ confirmation in your handoff.
 
 ```bash
 source ../lanes.env
-herdr pane run "$PM_PANE" "[LANE-FE→PM] handoff appended to mail/to-pm.md: <TASK-ID>"
+herdr agent send "$PM_PANE" "[LANE-FE→PM] handoff appended to mail/to-pm.md: <TASK-ID>"
 ```
 
 Questions to LANE-BE (interface clarification only) go to `../mail/to-be.md`
