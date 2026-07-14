@@ -112,6 +112,8 @@ async function findOrCreatePerson(
     first_name: string;
     last_name: string;
     date_of_birth: string | null;
+    email?: string | null;
+    phone?: string | null;
     custom_fields?: Record<string, string>;
   },
 ): Promise<{ outcome: ImportEntityOutcome; person?: PersonRow; error?: string }> {
@@ -122,7 +124,18 @@ async function findOrCreatePerson(
     fields.last_name,
     fields.date_of_birth,
   );
-  if (existing) return { outcome: 'matched', person: existing };
+  if (existing) {
+    // Backfill only what's missing — an import must never clobber a value
+    // someone already entered (e.g. by hand, from a more authoritative row).
+    const patch: { email?: string; phone?: string } = {};
+    if (!existing.email && fields.email) patch.email = fields.email;
+    if (!existing.phone && fields.phone) patch.phone = fields.phone;
+    if (Object.keys(patch).length === 0) return { outcome: 'matched', person: existing };
+
+    const { data } = await client.from('persons').update(patch).eq('id', existing.id).select();
+    const updated = (data?.[0] as PersonRow | undefined) ?? existing; // RLS may deny the backfill; matched either way
+    return { outcome: 'matched', person: updated };
+  }
 
   const { data, error } = await client
     .from('persons')
@@ -131,6 +144,8 @@ async function findOrCreatePerson(
       first_name: fields.first_name,
       last_name: fields.last_name,
       date_of_birth: fields.date_of_birth,
+      email: fields.email ?? null,
+      phone: fields.phone ?? null,
       custom_fields: fields.custom_fields ?? {},
     })
     .select()
@@ -310,6 +325,8 @@ export async function importRoster(
           first_name: guardian.first_name,
           last_name: guardian.last_name,
           date_of_birth: null,
+          email: guardian.email,
+          phone: guardian.phone,
         });
         if (guardianPersonResult.outcome === 'error' || !guardianPersonResult.person) {
           guardianResults.push({ outcome: 'error', error: guardianPersonResult.error });

@@ -453,5 +453,64 @@ function runSuite(): void {
         .eq('first_name', 'Sly');
       expect(guardianPersons ?? []).toHaveLength(0);
     });
+
+    // 6. Guardian email/phone are real data, not dropped on the floor — and
+    // a dedup match backfills only what's missing, never overwriting a value
+    // that's already there.
+    it('guardian email/phone are persisted on create, backfilled on match only when the existing value is null', async () => {
+      const guardianLastName = `Backfill-${runId}`;
+
+      const csv1 = csvRow({
+        first_name: 'Wes',
+        last_name: `Player1-${runId}`,
+        date_of_birth: '2014-04-04',
+        role: 'player',
+        guardian1_first_name: 'Fern',
+        guardian1_last_name: guardianLastName,
+        guardian1_email: 'fern@example.com',
+      });
+      const r1 = (await importRoster(orgId, teamSeasonId, parseRosterCsv(csv1).rows, { client: staffClient }))
+        .rows[0]!;
+      expect(r1.guardians[0]!.outcome).toBe('created');
+      const guardianPersonId = r1.guardians[0]!.personId!;
+
+      const { data: afterCreate } = await serviceClient
+        .from('persons')
+        .select('email, phone')
+        .eq('id', guardianPersonId)
+        .single();
+      expect(afterCreate?.email).toBe('fern@example.com');
+      expect(afterCreate?.phone).toBeNull();
+
+      // Second row is a DIFFERENT player with the SAME guardian by name, and
+      // supplies a different email + a new phone number. The guardian
+      // *person* dedups (same personId) — the guardianship *link* is
+      // legitimately new (Fern has never been linked to Zack before), so its
+      // outcome is 'created', not 'matched'. That's the correct, separate
+      // signal to check here; the actual backfill claim is verified by
+      // reading the person row back below.
+      const csv2 = csvRow({
+        first_name: 'Zack',
+        last_name: `Player2-${runId}`,
+        date_of_birth: '2013-08-08',
+        role: 'player',
+        guardian1_first_name: 'Fern',
+        guardian1_last_name: guardianLastName,
+        guardian1_email: 'fern-changed@example.com',
+        guardian1_phone: '555-9001',
+      });
+      const r2 = (await importRoster(orgId, teamSeasonId, parseRosterCsv(csv2).rows, { client: staffClient }))
+        .rows[0]!;
+      expect(r2.guardians[0]!.outcome).toBe('created'); // new link, same person
+      expect(r2.guardians[0]!.personId).toBe(guardianPersonId);
+
+      const { data: afterMatch } = await serviceClient
+        .from('persons')
+        .select('email, phone')
+        .eq('id', guardianPersonId)
+        .single();
+      expect(afterMatch?.email).toBe('fern@example.com'); // untouched — already non-null
+      expect(afterMatch?.phone).toBe('555-9001'); // backfilled — was null
+    });
   });
 }
