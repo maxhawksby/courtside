@@ -66,5 +66,8 @@ say "Supabase healthy on $LAN_IP:54321"
 
 # 6. LAN mode only. Do not use --tunnel: it is unnecessary under mirrored networking
 #    and currently broken (Expo's anonymous ngrok pool saturated, ERR_NGROK_108).
+#    --go pins Expo Go mode: with expo-dev-client in package.json, a bare
+#    `expo start` defaults to dev-client mode and the QR stops opening in Expo Go.
+#    Drop --go once the EAS dev-client build is installed on the phone.
 say "Starting Expo in LAN mode - scan the QR with Expo Go on the same Wi-Fi"
-cd "$MOBILE" && exec npx expo start
+cd "$MOBILE" && exec npx expo start --go
