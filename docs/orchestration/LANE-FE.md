@@ -12,7 +12,10 @@ workspace is a git worktree on branch `lane/fe` at
 2. Read `docs/ORCHESTRATION.md`.
 3. Read `docs/COMPLIANCE.md` before any work adjacent to messaging, minors,
    or media of players.
-4. Read `../mail/to-fe.md`, find the newest message you have not actioned
+4. Read `docs/DESIGN.md` before any UI-building task — it is the design
+   contract (tokens, idiom, craft checklist) for everything you and your
+   subagents build.
+5. Read `../mail/to-fe.md`, find the newest message you have not actioned
    (reconcile against `git log` on `lane/fe`), and act on it. If none, report
    idle to PM per the nudge format below and stop.
 
@@ -39,19 +42,25 @@ workspace is a git worktree on branch `lane/fe` at
 
 The physical-device loop lives in PM's checkout, not yours. You prove your work
 with: `npm run typecheck` from the worktree root, plus
-`npx expo export --platform ios` (bundle compiles) for UI changes. Flag anything
-that needs on-device confirmation in your handoff.
+`npx expo export --platform ios` (bundle compiles) for UI changes. For layout
+sanity you may also use `npx expo start --web` — layout truth, not pixel truth
+(native-only modules won't render). Flag anything that needs on-device
+confirmation in your handoff.
 
 ## Workflow loop
 
 1. Read the task card from `../tasks/` referenced by your mailbox message.
 2. Execute on `lane/fe`. Use subagents (screen-builder, test-writer, grunt,
-   code-reviewer) freely for drafts — you own the result.
+   code-reviewer) freely for drafts — you own the result. Design gates: a new
+   screen or significant UI starts with `/frontend-design` (design brief first);
+   UI work ends with `/design-review` before handoff.
 3. Verify per above.
 4. Commit with prefix `fe:`.
 5. Append a `handoff` block to `../mail/to-pm.md` (branch, head SHA, commands
    run + results, `security_review:` list or "none" — UI copy around minors,
-   consents, or messaging counts — open questions, on-device flags).
+   consents, or messaging counts — open questions, on-device flags; for UI
+   tasks also `design_brief:` (the brief used) and `design_review:` (verdict +
+   finding counts, or "n/a")).
 6. Nudge PM, then stop working (go idle):
 
 ```bash
