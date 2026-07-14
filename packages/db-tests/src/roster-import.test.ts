@@ -512,5 +512,58 @@ function runSuite(): void {
       expect(afterMatch?.email).toBe('fern@example.com'); // untouched — already non-null
       expect(afterMatch?.phone).toBe('555-9001'); // backfilled — was null
     });
+
+    // 7. Dedup matching is exact, not a wildcard match: '_' and '%' are real
+    // ILIKE metacharacters and must not merge distinct people.
+    it('dedup matching does not treat ILIKE metacharacters in a name as wildcards', async () => {
+      const lastName = `Wild-${runId}`;
+
+      const csv1 = csvRow({
+        first_name: 'Jordan',
+        last_name: lastName,
+        date_of_birth: '2012-01-01',
+        role: 'player',
+        guardian1_first_name: 'G',
+        guardian1_last_name: lastName,
+      });
+      const r1 = (await importRoster(orgId, teamSeasonId, parseRosterCsv(csv1).rows, { client: staffClient }))
+        .rows[0]!;
+      expect(r1.person.outcome).toBe('created');
+
+      // "Jo_dan" is a different person — '_' must not match the 'r' in
+      // "Jordan" the way an unescaped ILIKE pattern would.
+      const csv2 = csvRow({
+        first_name: 'Jo_dan',
+        last_name: lastName,
+        date_of_birth: '2012-01-01',
+        role: 'player',
+        guardian1_first_name: 'G',
+        guardian1_last_name: lastName,
+      });
+      const r2 = (await importRoster(orgId, teamSeasonId, parseRosterCsv(csv2).rows, { client: staffClient }))
+        .rows[0]!;
+      expect(r2.person.outcome).toBe('created');
+      expect(r2.person.personId).not.toBe(r1.person.personId);
+
+      // Exactly one row per distinct first_name — "Jo_dan" got its own
+      // person instead of silently merging into "Jordan"'s. (The shared
+      // guardian "G" also sits under `lastName`, correctly deduped to one
+      // row across both imports — not part of what this assertion checks.)
+      const { data: persons } = await serviceClient
+        .from('persons')
+        .select('id, first_name')
+        .eq('organization_id', orgId)
+        .eq('last_name', lastName)
+        .in('first_name', ['Jordan', 'Jo_dan']);
+      expect(persons).toHaveLength(2);
+
+      const { data: guardianPersons } = await serviceClient
+        .from('persons')
+        .select('id')
+        .eq('organization_id', orgId)
+        .eq('last_name', lastName)
+        .eq('first_name', 'G');
+      expect(guardianPersons).toHaveLength(1); // deduped across both rows, unaffected
+    });
   });
 }

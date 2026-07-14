@@ -85,6 +85,17 @@ function isDuplicateKeyError(error: { code?: string } | null): boolean {
   return error?.code === DUPLICATE_KEY;
 }
 
+/**
+ * Postgres ILIKE's default escape character is backslash; `%` and `_` are
+ * wildcards otherwise (a literal "Jo_dan" would match "Jordan" — `_` means
+ * "any single character"). Escaping backslash itself first, then the two
+ * wildcards, in one pass keeps the escaping correct even if a name contains
+ * a literal backslash.
+ */
+function escapeIlike(value: string): string {
+  return value.replace(/[\\%_]/g, (ch) => `\\${ch}`);
+}
+
 async function findExistingPerson(
   client: SupabaseClient,
   orgId: string,
@@ -96,8 +107,8 @@ async function findExistingPerson(
     .from('persons')
     .select('*')
     .eq('organization_id', orgId)
-    .ilike('first_name', firstName)
-    .ilike('last_name', lastName);
+    .ilike('first_name', escapeIlike(firstName))
+    .ilike('last_name', escapeIlike(lastName));
   query = dateOfBirth ? query.eq('date_of_birth', dateOfBirth) : query.is('date_of_birth', null);
 
   const { data, error } = await query.limit(1);
