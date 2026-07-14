@@ -36,6 +36,10 @@ proposals to PM (see §5).
   the client's logo, arriving next development iteration. Until then `PrimaryButton`
   deliberately stays neutral (`backgroundSelected`) — do not re-propose brand color on
   buttons; the open `design_proposal` is parked, not forgotten.
+  Also parked with the logo-palette work (PM decision 2026-07-14, FE-4 proposal):
+  per-scheme semantic `danger` — `Brand.danger #d92c2c` is ~3.5:1 on dark
+  `backgroundElement`, borderline for small text. Until the semantic role lands, use
+  `Brand.danger` with a bold/large weight on dark surfaces; do not re-propose.
 - **Fonts**: platform system fonts via `Platform.select` — **by design** (native feel,
   zero font-loading cost). This overrides the generic "never system fonts" rule: type
   personality here comes from scale, weight, and spacing, not typeface.
