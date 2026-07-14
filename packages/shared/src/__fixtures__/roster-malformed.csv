@@ -1,0 +1,8 @@
+first_name,last_name,date_of_birth,role,jersey_number,guardian1_first_name,guardian1_last_name,guardian1_email,guardian1_phone,guardian1_relationship,guardian2_first_name,guardian2_last_name,guardian2_email,guardian2_phone,guardian2_relationship,media_consent,t_shirt_size
+Mia,,2016-01-05,player,,Pat,Doe,,,,,,,,,,
+Noah,Kim,,player,,Lee,Kim,,,,,,,,,,
+Zoe,Diaz,2015-06-01,manager,,Ana,Diaz,,,,,,,,,,
+Eli,Cruz,2013-09-09,player,,,,,,,,,,,,,
+Ivy,Chen,02/15/2015,player,,Bo,Chen,,,,,,,,,,
+Cole,West,2012-03-03,player,,Amy,West,,,,Ray,,,,,,
+Rae,Ford,2011-08-20,player,,Tia,Ford,,,,,,,,,maybe,

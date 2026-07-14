@@ -1,0 +1,5 @@
+first_name,last_name,date_of_birth,role,jersey_number,guardian1_first_name,guardian1_last_name,guardian1_email,guardian1_phone,guardian1_relationship,guardian2_first_name,guardian2_last_name,guardian2_email,guardian2_phone,guardian2_relationship,media_consent,t_shirt_size
+Ava,Johnson,2015-04-02,player,7,Maria,Johnson,maria@example.com,555-0101,mother,,,,,,true,YM
+Ben,Lee,2014-11-19,player,,David,Lee,david@example.com,555-0202,father,Grace,Lee,grace@example.com,555-0203,mother,,YL
+Coach,Smith,,coach,,,,,,,,,,,,,
+Sam,Park,,scorekeeper,,,,,,,,,,,,,
