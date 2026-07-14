@@ -9,12 +9,15 @@ import { Brand, Spacing } from '@/constants/theme';
 import { AddToRosterPanel } from '@/features/teams/components/add-to-roster-panel';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PrimaryButton } from '@/components/ui/primary-button';
+import { buildIcs } from '@/features/events/ics';
+import { shareIcs } from '@/features/events/share-ics';
 import { RosterRow } from '@/features/teams/components/roster-row';
 import {
   archiveTeam,
   createSeason,
   createTeamSeason,
   getRoster,
+  listEvents,
   listMyRoles,
   listSeasons,
   listTeams,
@@ -24,6 +27,12 @@ import {
   type TeamWithDivision,
 } from '@/lib/data';
 import { useOrg } from '@/lib/org-context';
+import type { EventRow } from '@courtside/shared';
+
+function scheduleFileName(teamName: string): string {
+  const slug = teamName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'team';
+  return `${slug}-schedule.ics`;
+}
 
 const DEFAULT_SEASON_NAME = '2026-27';
 
@@ -35,6 +44,7 @@ export default function TeamDetailScreen() {
   const [team, setTeam] = useState<TeamWithDivision | null>(null);
   const [teamSeasonId, setTeamSeasonId] = useState<string | null>(null);
   const [roster, setRoster] = useState<RosterEntry[]>([]);
+  const [upcomingEvents, setUpcomingEvents] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddPanel, setShowAddPanel] = useState(false);
@@ -42,6 +52,8 @@ export default function TeamDetailScreen() {
   const [canManageTeam, setCanManageTeam] = useState(false);
   const [archiveBusy, setArchiveBusy] = useState(false);
   const [archiveError, setArchiveError] = useState<string | null>(null);
+  const [exportBusy, setExportBusy] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!activeOrg || !teamId) return;
@@ -84,8 +96,12 @@ export default function TeamDetailScreen() {
       }
       setTeamSeasonId(teamSeason.id);
 
-      const rosterRows = await getRoster(teamSeason.id);
+      const [rosterRows, eventRows] = await Promise.all([
+        getRoster(teamSeason.id),
+        listEvents(activeOrg.id, { teamSeasonId: teamSeason.id, from: new Date().toISOString() }),
+      ]);
       setRoster(rosterRows);
+      setUpcomingEvents(eventRows);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not load team');
     } finally {
@@ -119,6 +135,20 @@ export default function TeamDetailScreen() {
       setArchiveBusy(false);
     }
   }, [teamId, router]);
+
+  const handleExportSchedule = useCallback(async () => {
+    if (!team || upcomingEvents.length === 0) return;
+    setExportBusy(true);
+    setExportError(null);
+    try {
+      const ics = buildIcs(upcomingEvents, `${team.name} Schedule`);
+      await shareIcs(ics, scheduleFileName(team.name));
+    } catch (e) {
+      setExportError(e instanceof Error ? e.message : 'Could not export the schedule');
+    } finally {
+      setExportBusy(false);
+    }
+  }, [team, upcomingEvents]);
 
   const handleArchive = useCallback(() => {
     if (!team) return;
@@ -207,6 +237,31 @@ export default function TeamDetailScreen() {
             ) : null}
           </ThemedView>
         )}
+
+        <View style={styles.section}>
+          <View style={styles.headerRow}>
+            <ThemedText type="smallBold">Schedule</ThemedText>
+            {exportBusy ? (
+              <ActivityIndicator />
+            ) : (
+              <PrimaryButton
+                label="Export schedule"
+                onPress={() => void handleExportSchedule()}
+                disabled={upcomingEvents.length === 0}
+              />
+            )}
+          </View>
+          {upcomingEvents.length === 0 && (
+            <ThemedText type="small" themeColor="textSecondary">
+              No upcoming games or practices yet — schedule one to export a calendar file.
+            </ThemedText>
+          )}
+          {exportError ? (
+            <ThemedText type="small" themeColor="textSecondary">
+              {exportError}
+            </ThemedText>
+          ) : null}
+        </View>
 
         <View style={styles.section}>
           <View style={styles.headerRow}>
