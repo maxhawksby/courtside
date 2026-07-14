@@ -4,7 +4,7 @@
  */
 import type { EventRow } from '@courtside/shared';
 
-import { EVENT_TYPE_LABELS } from './format';
+import { EVENT_TYPE_LABELS, formatTime } from './format';
 
 const FOLD_LIMIT_OCTETS = 75;
 const FALLBACK_DURATION_MS = 60 * 60 * 1000; // 1h, used when ends_at is null.
@@ -85,7 +85,13 @@ export function buildIcs(events: EventRow[], calendarName: string, now: Date = n
     lines.push(`DTEND:${toIcsUtc(end.toISOString())}`);
     lines.push(`SUMMARY:${escapeText(summary)}`);
     if (event.location) lines.push(`LOCATION:${escapeText(event.location)}`);
-    if (event.notes) lines.push(`DESCRIPTION:${escapeText(event.notes)}`);
+
+    const descriptionParts: string[] = [];
+    if (event.arrival_at) descriptionParts.push(`Arrive by ${formatTime(event.arrival_at)}`);
+    if (event.notes) descriptionParts.push(event.notes);
+    if (descriptionParts.length > 0) {
+      lines.push(`DESCRIPTION:${escapeText(descriptionParts.join('\n'))}`);
+    }
     lines.push('END:VEVENT');
   }
 
