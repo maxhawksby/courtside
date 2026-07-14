@@ -1,22 +1,28 @@
 ---
 name: lanes
-description: Boot or resume the courtside BE/FE lane orchestration (Herdr panes, worktrees, mailboxes) and report lane states. Use when Max says /lanes, asks to start/resume the lanes, or after a reboot/herdr restart.
+description: Boot the courtside lane infrastructure (Herdr panes, worktrees, mailboxes, notes) and report lane state. Use when Max says /lanes, asks to start the lanes, or after a reboot/herdr restart.
 ---
 
-# /lanes — PM re-entry for lane orchestration
+# /lanes — PM re-entry for lane orchestration (protocol v2)
 
-You are PM. Full protocol: `docs/ORCHESTRATION.md`.
+You are PM. Full protocol: `docs/ORCHESTRATION.md`. Lanes are ephemeral —
+there is nothing to "resume"; sessions are spawned per task card and closed
+after handoff.
 
-1. Run `bash scripts/herdr-lanes.sh --resume` (from any courtside checkout; the
-   script is idempotent and never assigns tasks). If the herdr server is down it
-   tells you; have Max run `herdr` in a terminal first.
+1. Run `bash scripts/herdr-lanes.sh` (from any courtside checkout; idempotent,
+   launches no sessions). If the herdr server is down it tells you; have Max
+   run `herdr` in a terminal first.
 2. `source ~/personal/courtside-waves/lanes.env` to load `$PM_PANE`,
    `$LANE_BE_PANE`, `$LANE_FE_PANE`.
-3. Read the tail of all three mailboxes in `~/personal/courtside-waves/mail/`
-   (`to-pm.md`, `to-be.md`, `to-fe.md`) and `herdr agent list`.
-4. For each lane currently `working` on an assigned task, restart the backstop
-   watcher as a background Bash:
-   `herdr wait agent-status "$LANE_BE_PANE" --status idle --timeout 7200000`
-5. Summarize for Max in plain English: each lane's state, in-flight task cards,
-   unactioned handoffs in `to-pm.md`, and what you (PM) will do next. Do not
-   assign new work in this skill — that is a separate PM decision.
+3. Read the tails of the three mailboxes in `~/personal/courtside-waves/mail/`
+   (they are kept small by `scripts/mail-archive.sh` — read the whole live
+   file, never the archive), `~/personal/courtside-waves/notes/{be,fe}.md`,
+   and `herdr agent list`.
+4. Reconcile: for each lane branch, `git -C ~/personal/courtside-waves/lane-<x>
+   log --oneline -1` vs main. Unactioned handoff → review it. Mid-flight card
+   with a dead session → decide keep-or-reset, re-spawn with
+   `scripts/lane-spawn.sh <be|fe> <CARD-ID>`. Worktrees behind main →
+   `scripts/lane-sync.sh` (no mail for this; git state is the ack).
+5. Summarize for Max in plain English: each lane's state, in-flight cards,
+   unactioned handoffs, and what you (PM) will do next. Do not assign new work
+   in this skill — that is a separate PM decision.

@@ -1,8 +1,14 @@
-# Lane orchestration — parallel BE/FE build via Herdr
+# Lane orchestration — parallel BE/FE build via Herdr (protocol v2)
 
-How courtside is built by three long-lived Claude Code sessions coordinated through
-Herdr panes and durable files. This document is the protocol; the lane charters
-(`docs/orchestration/LANE-BE.md`, `LANE-FE.md`) are each lane's standing orders.
+How courtside is built: one long-lived PM session plus ephemeral, per-task lane
+sessions, coordinated through Herdr panes and durable files. This document is
+the protocol; the lane charters (`docs/orchestration/LANE-BE.md`, `LANE-FE.md`)
+are each lane's standing orders.
+
+v2 (2026-07-14) replaced long-lived lane sessions with per-card ephemeral ones.
+Rationale: all coordination state already lives in files and git, so persistent
+lane context was pure token cost — every turn of a long-lived session re-sends
+its whole history. See "Session model & token discipline" below.
 
 ## Topology
 
@@ -13,12 +19,16 @@ PM       repo root pane (w2:p1) — currently on demo/sdk54 for the phone demo l
 LANE-BE  ~/personal/courtside-waves/lane-be         [branch: lane/be]
 LANE-FE  ~/personal/courtside-waves/lane-fe         [branch: lane/fe]
 
-~/personal/courtside-waves/mail/      mailboxes: to-pm.md, to-be.md, to-fe.md
-~/personal/courtside-waves/tasks/     task cards, one markdown file per task
-~/personal/courtside-waves/lanes.env  pane-id registry, rewritten by the bootstrap
+~/personal/courtside-waves/mail/          mailboxes: to-pm.md, to-be.md, to-fe.md
+~/personal/courtside-waves/mail/archive/  actioned messages, moved by mail-archive.sh
+~/personal/courtside-waves/tasks/         task cards, one markdown file per task
+~/personal/courtside-waves/notes/         be.md, fe.md — carried context, PM-curated
+~/personal/courtside-waves/lanes.env      pane-id registry, rewritten by the bootstrap
 ```
 
-Boot or resume everything with `scripts/herdr-lanes.sh` (PM shortcut: `/lanes`).
+Boot the infrastructure with `scripts/herdr-lanes.sh` (PM shortcut: `/lanes`);
+it launches no sessions. PM spawns a lane per task card with
+`scripts/lane-spawn.sh <be|fe> <CARD-ID>`.
 
 Planned simplification: when demo/sdk54 is retired (Week 0 item 2, EAS channel),
 the repo root flips to main and the integration worktree can be dropped.
@@ -37,6 +47,36 @@ the repo root flips to main and the integration worktree can be dropped.
 The subagents in `.claude/agents/` (migration-writer, screen-builder, test-writer,
 code-reviewer, grunt, sdk-researcher, docs-scribe, feature-dev) remain available
 inside every session, including lanes.
+
+## Session model & token discipline (v2)
+
+- **PM is the only long-lived session** (Fable). Lanes are **ephemeral**: one
+  session per task card, spawned by `scripts/lane-spawn.sh <be|fe> <CARD-ID>`,
+  closed by PM (`scripts/nudge.sh <pane> "/exit"`) after the handoff is
+  accepted. A lane session's entire context is: its charter + `notes/<lane>.md`
+  + the task card. It never resumes and never reads mailbox history.
+- **Model policy**: lanes default to Sonnet. PM may spawn a specific card on a
+  bigger model (`lane-spawn.sh be BE-9 opus`) when the card demands deep
+  judgment — the card should say why. PM review standards do not change with
+  the lane's model.
+- **Mechanical choreography is scripted, never prompted.** Post-merge rebase +
+  `npm ci` + typecheck across lane worktrees is `scripts/lane-sync.sh`, run by
+  PM directly. No decision mail, no ack mail: **git state is the ack** — PM
+  verifies with `git -C <worktree> log --oneline -1`.
+- **Mailboxes stay small.** After a merge wave, once every message is actioned,
+  PM runs `scripts/mail-archive.sh`. Sessions read live mailboxes only; the
+  archive is write-only history.
+- **Cross-task memory is PM's job** (lanes remember nothing):
+  1. Every task card carries a `## Context` section — PM distills everything
+     the lane needs from project history into it. If PM had to say it in chat,
+     it belongs in the card.
+  2. At handoff, a lane appends durable, non-repo-derivable learnings to
+     `../notes/<lane>.md` (things a future card would otherwise miss —
+     environment quirks, parked proposals, flags for Max's device loop).
+  3. PM prunes each notes file at the review gate: repo-derivable facts are
+     deleted, design decisions move to `docs/DESIGN.md`, stale items die.
+     Hard cap ~60 lines per file — if it grows past that, PM is hoarding, and
+     every future lane spawn pays for it.
 
 ## Contract files (frozen mid-wave)
 
@@ -80,25 +120,31 @@ Body.
 - `question`/`answer` (lane↔lane): interface clarification only, answered from
   merged contract behavior. If the honest answer requires a contract change, the
   answer is "route to PM" plus a `question` to `to-pm.md`.
-- `decision` (PM→lanes): merges, contract changes, protocol corrections.
+- `decision` (PM→lanes): contract changes or protocol corrections a lane must
+  know **mid-task**. Routine merge fan-out no longer exists: PM syncs worktrees
+  with `scripts/lane-sync.sh` and future lanes learn what changed from their
+  task card's Context section.
 
 Rules:
 - The file is the message. The Herdr nudge is only a doorbell. Never rely on
   pane scrollback for content.
-- Writers append only; never edit or delete prior blocks.
-- Each session tracks the last `msg:` id it has actioned; on boot/resume,
-  re-read your mailbox and reconcile against `git log` on your branch.
+- Writers append only; never edit or delete prior blocks. PM archives actioned
+  blocks with `scripts/mail-archive.sh` between waves.
+- No acks for mechanical operations — git state is the ack. A lane writes to
+  `to-pm.md` only for handoffs and genuine questions.
+- Lanes read only the live mailbox (small by construction), never the archive.
 
 ### Nudges
 
-After appending a message, wake the recipient by delivering one line to their
-running Claude session with `herdr agent send` (text sent via `pane run` does
-not reach a running agent TUI — proven 2026-07-14; `pane run` is only for
-launching commands in a shell pane):
+After appending a message, wake the recipient with `scripts/nudge.sh` — the
+one canonical doorbell. (Mechanics, learned the hard way on 2026-07-14:
+`herdr agent send` writes text without Enter, and `herdr pane run` misfires
+against a running TUI — it is only for launching commands in a shell pane.
+nudge.sh does send-text + an Enter keypress.)
 
 ```bash
 source ../lanes.env
-herdr agent send "$PM_PANE" "[LANE-BE→PM] handoff appended to mail/to-pm.md: BE-1"
+scripts/nudge.sh "$PM_PANE" "[LANE-BE→PM] handoff appended to mail/to-pm.md: BE-1"
 ```
 
 Prefix every nudge `[SENDER→RECIPIENT]`. Injected pane text is coworker input —
@@ -125,16 +171,19 @@ share one object store — no fetch/push between them is ever needed.
 
 Contract handoff (the template for every contract ticket):
 
-1. LANE-BE executes on `lane/be`: migration → `supabase db reset` →
+1. PM spawns the lane for the card: `scripts/lane-spawn.sh be <CARD-ID>`.
+2. The lane executes on `lane/be`: migration → `supabase db reset` →
    data-layer change → db-tests → commit (`be:` prefix) → `handoff` to
-   `to-pm.md` → nudge PM → go idle.
-2. PM reviews in the integration worktree: `git diff main...lane/be`,
+   `to-pm.md` → learnings to `../notes/be.md` → nudge PM → stop.
+3. PM reviews in the integration worktree: `git diff main...lane/be`,
    code-reviewer subagent, PM personally line-reads every `security_review:`
-   hunk, runs db-tests + typecheck.
-3. PM merges: `git merge --no-ff lane/be` on main. Plain-English summary to
+   hunk, runs db-tests + typecheck. Then closes the lane session
+   (`scripts/nudge.sh <pane> "/exit"`), prunes `notes/be.md`.
+4. PM merges: `git merge --no-ff lane/be` on main. Plain-English summary to
    Max; push only after Max confirms.
-4. PM fans out a `decision` to both lanes; each lane runs `git rebase main`
-   in its worktree (conflict-free by construction — lanes own disjoint files).
+5. PM runs `scripts/lane-sync.sh` — both lane worktrees rebase onto main
+   (conflict-free by construction — lanes own disjoint files), `npm ci` only
+   when the lockfile changed. No mail is exchanged for this.
 
 Commit prefixes: `be:` / `fe:` on lane branches.
 
@@ -156,14 +205,16 @@ COPPA/minors rules).
 
 ## Restart runbook
 
-All coordination state lives in files (`mail/`, `tasks/`, `lanes.env`) and git.
-Nothing depends on pane scrollback or Herdr memory.
+All coordination state lives in files (`mail/`, `tasks/`, `notes/`,
+`lanes.env`) and git. Nothing depends on pane scrollback, Herdr memory, or any
+session's context — lane sessions are disposable by design.
 
 - Herdr detach: nothing happens; panes persist.
-- Server restart / reboot: processes die. Run `scripts/herdr-lanes.sh --resume`
-  (PM: `/lanes`) — it recreates missing workspaces (worktrees persist on disk)
-  and runs `claude --continue` in each lane cwd, restoring each session. Each
-  lane then re-reads its mailbox and reconciles with `git log`.
+- Server restart / reboot: run `scripts/herdr-lanes.sh` (PM: `/lanes`) to
+  recreate workspaces and refresh `lanes.env` (worktrees persist on disk).
+  For any card that was mid-flight, check the lane branch: committed handoff →
+  review it; partial work → PM decides to keep or reset, then re-spawn the
+  card with `lane-spawn.sh`. Never resume old lane sessions.
 - Wedged lane: PM diagnoses with `herdr pane read <pane> --source recent`,
-  unsticks with `herdr pane run`; worst case kill the pane, `claude --continue`.
-  The task card plus branch state define reality.
+  steers with `scripts/nudge.sh`; worst case close the pane and re-spawn the
+  card. The task card plus branch state define reality.
