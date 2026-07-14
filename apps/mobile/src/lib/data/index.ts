@@ -9,4 +9,5 @@ export * from './events';
 export * from './households';
 export * from './messaging';
 export * from './roles';
+export * from './roster-import';
 export * from './sensitive';

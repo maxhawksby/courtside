@@ -6,6 +6,7 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@courtside/shared": "*",
     "@supabase/supabase-js": "^2",
     "@types/node": "^24",
     "typescript": "^5",

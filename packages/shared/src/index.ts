@@ -99,3 +99,7 @@ export function isOutOfHours(at: Date = new Date()): boolean {
 // ---- Database row types (mirror schema v1) ----
 
 export * from './db';
+
+// ---- CSV roster import (BE-4) ----
+
+export * from './roster-import';
