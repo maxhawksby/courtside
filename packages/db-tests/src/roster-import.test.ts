@@ -416,5 +416,42 @@ function runSuite(): void {
         .eq('player_person_id', player.id);
       expect(guardianships).toHaveLength(5);
     });
+
+    // 5. Guardian columns on a non-player row must never create a real
+    // guardianship (fix for the review-blocking finding: this was reachable
+    // even by a staff/division_admin actor before the parser rejected it —
+    // proving the guard is in parseRosterCsv, not incidental to RLS).
+    it('guardian columns on a non-player row are rejected before any write, even for a privileged actor', async () => {
+      const lastName = `CoachGuardian-${runId}`;
+      const csv = csvRow({
+        first_name: 'Pat',
+        last_name: lastName,
+        role: 'coach',
+        guardian2_first_name: 'Sly',
+        guardian2_last_name: lastName,
+      });
+
+      const { rows, errors } = parseRosterCsv(csv);
+      expect(rows).toEqual([]);
+      expect(errors).toEqual([
+        { line: 2, message: 'guardian2_* columns are only allowed on player rows' },
+      ]);
+
+      const result = await importRoster(orgId, teamSeasonId, rows, { client: staffClient });
+      expect(result.rows).toEqual([]);
+
+      const { data: coachPersons } = await serviceClient
+        .from('persons')
+        .select('id')
+        .eq('organization_id', orgId)
+        .eq('last_name', lastName);
+      expect(coachPersons ?? []).toHaveLength(0);
+      const { data: guardianPersons } = await serviceClient
+        .from('persons')
+        .select('id')
+        .eq('organization_id', orgId)
+        .eq('first_name', 'Sly');
+      expect(guardianPersons ?? []).toHaveLength(0);
+    });
   });
 }

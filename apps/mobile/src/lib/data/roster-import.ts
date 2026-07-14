@@ -299,30 +299,36 @@ export async function importRoster(
 
     const personId = personResult.person.id;
 
+    // Guardian links are player-only (see parseRosterCsv — a non-player row
+    // with guardian data is rejected before it ever gets here). Guarding
+    // again here means a future parser change can't silently turn into a
+    // guardianship against a coach/scorekeeper's person record.
     const guardianResults: ImportGuardianOutcome[] = [];
-    for (const guardian of row.guardians) {
-      const guardianPersonResult = await findOrCreatePerson(client, orgId, {
-        first_name: guardian.first_name,
-        last_name: guardian.last_name,
-        date_of_birth: null,
-      });
-      if (guardianPersonResult.outcome === 'error' || !guardianPersonResult.person) {
-        guardianResults.push({ outcome: 'error', error: guardianPersonResult.error });
-        continue;
+    if (row.role === 'player') {
+      for (const guardian of row.guardians) {
+        const guardianPersonResult = await findOrCreatePerson(client, orgId, {
+          first_name: guardian.first_name,
+          last_name: guardian.last_name,
+          date_of_birth: null,
+        });
+        if (guardianPersonResult.outcome === 'error' || !guardianPersonResult.person) {
+          guardianResults.push({ outcome: 'error', error: guardianPersonResult.error });
+          continue;
+        }
+        const link = await findOrCreateGuardianship(
+          client,
+          orgId,
+          guardianPersonResult.person.id,
+          personId,
+          guardian.relationship,
+        );
+        guardianResults.push({
+          outcome: link.outcome,
+          personId: guardianPersonResult.person.id,
+          guardianshipId: link.guardianshipId,
+          error: link.error,
+        });
       }
-      const link = await findOrCreateGuardianship(
-        client,
-        orgId,
-        guardianPersonResult.person.id,
-        personId,
-        guardian.relationship,
-      );
-      guardianResults.push({
-        outcome: link.outcome,
-        personId: guardianPersonResult.person.id,
-        guardianshipId: link.guardianshipId,
-        error: link.error,
-      });
     }
 
     const membershipResult = await findOrCreateMembership(

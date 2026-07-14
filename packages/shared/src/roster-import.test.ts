@@ -127,4 +127,24 @@ describe('parseRosterCsv', () => {
       { line: 2, message: 'role "manager" is not one of player, coach, scorekeeper' },
     ]);
   });
+
+  it('normalizes role casing before validation', () => {
+    const { rows, errors } = parseRosterCsv(
+      'first_name,last_name,date_of_birth,role,guardian1_first_name,guardian1_last_name\n' +
+        'Gia,Ross,2015-01-01,Player,Mo,Ross\n',
+    );
+    expect(errors).toEqual([]);
+    expect(rows[0]?.role).toBe('player');
+  });
+
+  it('rejects guardian columns on a non-player row instead of silently linking them', () => {
+    const { rows, errors } = parseRosterCsv(
+      'first_name,last_name,role,guardian2_first_name,guardian2_last_name\n' +
+        'Pat,Coachman,coach,Sly,Coachman\n',
+    );
+    expect(rows).toEqual([]);
+    expect(errors).toEqual([
+      { line: 2, message: 'guardian2_* columns are only allowed on player rows' },
+    ]);
+  });
 });

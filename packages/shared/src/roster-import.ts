@@ -98,6 +98,12 @@ function parseConsent(value: string | undefined, line: number, errors: RosterCsv
   return null;
 }
 
+const GUARDIAN_FIELD_SUFFIXES = ['first_name', 'last_name', 'email', 'phone', 'relationship'] as const;
+
+function hasAnyGuardianField(record: Record<string, string>, prefix: 'guardian1' | 'guardian2'): boolean {
+  return GUARDIAN_FIELD_SUFFIXES.some((suffix) => blankToNull(record[`${prefix}_${suffix}`]) !== null);
+}
+
 function parseGuardian(
   record: Record<string, string>,
   prefix: 'guardian1' | 'guardian2',
@@ -158,15 +164,16 @@ export function parseRosterCsv(text: string): ParseRosterCsvResult {
     }
 
     const roleRaw = blankToNull(record.role);
+    const roleNormalized = roleRaw ? roleRaw.toLowerCase() : null;
     let role: RosterRowRole = 'player';
-    if (roleRaw) {
-      if (!(ROSTER_ROW_ROLES as readonly string[]).includes(roleRaw)) {
+    if (roleNormalized) {
+      if (!(ROSTER_ROW_ROLES as readonly string[]).includes(roleNormalized)) {
         rowErrors.push({
           line,
           message: `role "${roleRaw}" is not one of ${ROSTER_ROW_ROLES.join(', ')}`,
         });
       } else {
-        role = roleRaw as RosterRowRole;
+        role = roleNormalized as RosterRowRole;
       }
     }
 
@@ -182,9 +189,24 @@ export function parseRosterCsv(text: string): ParseRosterCsvResult {
       rowErrors.push({ line, message: 'date_of_birth is required for players' });
     }
 
-    const guardian1 = parseGuardian(record, 'guardian1', line, role === 'player', rowErrors);
-    const guardian2 = parseGuardian(record, 'guardian2', line, false, rowErrors);
-    const guardians = [guardian1, guardian2].filter((g): g is RosterCsvGuardian => g != null);
+    // Guardian columns model a guardian->player relationship (COPPA/SafeSport
+    // adjacent — see COMPLIANCE.md §2-3): allowing them on a coach/scorekeeper
+    // row would create a real guardianships link against that staff member's
+    // own person record, granting guardian-level visibility it was never
+    // meant to have. Reject outright rather than silently ignoring the data.
+    let guardians: RosterCsvGuardian[] = [];
+    if (role !== 'player') {
+      if (hasAnyGuardianField(record, 'guardian1')) {
+        rowErrors.push({ line, message: 'guardian1_* columns are only allowed on player rows' });
+      }
+      if (hasAnyGuardianField(record, 'guardian2')) {
+        rowErrors.push({ line, message: 'guardian2_* columns are only allowed on player rows' });
+      }
+    } else {
+      const guardian1 = parseGuardian(record, 'guardian1', line, true, rowErrors);
+      const guardian2 = parseGuardian(record, 'guardian2', line, false, rowErrors);
+      guardians = [guardian1, guardian2].filter((g): g is RosterCsvGuardian => g != null);
+    }
 
     const media_consent = parseConsent(record.media_consent, line, rowErrors);
 
