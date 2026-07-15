@@ -3,7 +3,8 @@ import type { ChannelRow } from '@courtside/shared';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing, TouchTarget } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 import { Badge } from './badge';
 
@@ -13,10 +14,13 @@ type ChannelListRowProps = {
 };
 
 export function ChannelListRow({ channel, onPress }: ChannelListRowProps) {
+  const theme = useTheme();
   return (
     <Pressable onPress={onPress} hitSlop={4}>
       {({ pressed }) => (
-        <ThemedView type="backgroundElement" style={[styles.row, pressed && styles.pressed]}>
+        <ThemedView
+          type="backgroundElement"
+          style={[styles.row, { borderColor: theme.border }, pressed && styles.pressed]}>
           <ThemedText style={styles.name}>{channel.name}</ThemedText>
           <View style={styles.badges}>
             {channel.team_season_id ? <Badge label="Team" /> : null}
@@ -33,9 +37,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderRadius: Spacing.three,
+    borderRadius: Radius.card,
+    borderWidth: StyleSheet.hairlineWidth,
     paddingVertical: Spacing.three,
     paddingHorizontal: Spacing.three,
+    minHeight: TouchTarget.minimum,
     gap: Spacing.two,
   },
   name: {

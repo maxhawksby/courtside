@@ -15,7 +15,8 @@ import type { ChannelRow, MessageRow } from '@courtside/shared';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { PrimaryButton } from '@/components/ui/primary-button';
+import { Radius, Spacing, TouchTarget } from '@/constants/theme';
 import { MembersSheet } from '@/features/messaging/components/members-sheet';
 import { MessageBubble } from '@/features/messaging/components/message-bubble';
 import {
@@ -54,13 +55,15 @@ export default function ChannelDetailScreen() {
 
   const [membersVisible, setMembersVisible] = useState(false);
   const [muted, setMuted] = useState(false);
+  const [retryNonce, setRetryNonce] = useState(0);
 
   // Loading is derived: the screen is loading until the fetch for the current
   // org/channel/user combination settles, so the effect never sets state
   // synchronously. If the guard below keeps us from fetching, this stays true
-  // forever — same as the previous behavior.
+  // forever — same as the previous behavior. retryNonce is a deliberate
+  // re-run trigger (retry), bumping it changes loadKey and re-fires the effect.
   const userId = user?.id;
-  const loadKey = `${activeOrg?.id ?? ''}|${channelId ?? ''}|${userId ?? ''}`;
+  const loadKey = `${activeOrg?.id ?? ''}|${channelId ?? ''}|${userId ?? ''}|${retryNonce}`;
   const [settledLoadKey, setSettledLoadKey] = useState<string | null>(null);
   const loading = settledLoadKey !== loadKey;
 
@@ -195,6 +198,9 @@ export default function ChannelDetailScreen() {
       <ThemedView style={styles.centered}>
         <Stack.Screen options={{ title: 'Channel' }} />
         <ThemedText themeColor="textSecondary">{error ?? 'Channel not found'}</ThemedText>
+        {error ? (
+          <PrimaryButton label="Try again" onPress={() => setRetryNonce((n) => n + 1)} />
+        ) : null}
       </ThemedView>
     );
   }
@@ -210,10 +216,10 @@ export default function ChannelDetailScreen() {
             title: channel.name,
             headerRight: () => (
               <View style={styles.headerActions}>
-                <Pressable onPress={() => setMembersVisible(true)} hitSlop={8}>
+                <Pressable onPress={() => setMembersVisible(true)} hitSlop={12}>
                   <ThemedText type="linkPrimary">Members</ThemedText>
                 </Pressable>
-                <Pressable onPress={() => void handleToggleMute()} hitSlop={8}>
+                <Pressable onPress={() => void handleToggleMute()} hitSlop={12}>
                   <ThemedText type="linkPrimary">{muted ? 'Unmute' : 'Mute'}</ThemedText>
                 </Pressable>
               </View>
@@ -248,17 +254,24 @@ export default function ChannelDetailScreen() {
             onChangeText={setDraft}
             placeholder="Message"
             placeholderTextColor={theme.textSecondary}
-            style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
+            style={[
+              styles.input,
+              { color: theme.text, backgroundColor: theme.backgroundElement, borderColor: theme.border },
+            ]}
             multiline
           />
-          <Pressable onPress={() => void handleSend()} disabled={sending || !draft.trim()} hitSlop={8}>
+          <Pressable
+            onPress={() => void handleSend()}
+            disabled={sending || !draft.trim()}
+            hitSlop={12}
+            style={styles.sendTapTarget}>
             <ThemedText type="linkPrimary" style={(sending || !draft.trim()) && styles.sendDisabled}>
               {sending ? 'Sending…' : 'Send'}
             </ThemedText>
           </Pressable>
         </View>
         {sendError ? (
-          <ThemedText type="small" style={styles.sendError}>
+          <ThemedText type="small" style={[styles.sendError, { color: theme.danger }]}>
             {sendError}
           </ThemedText>
         ) : null}
@@ -282,6 +295,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: Spacing.three,
     paddingHorizontal: Spacing.four,
   },
   headerActions: {
@@ -303,11 +317,17 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    borderRadius: Spacing.three,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.input,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
+    minHeight: TouchTarget.minimum,
     fontSize: 16,
     maxHeight: 120,
+  },
+  sendTapTarget: {
+    minHeight: TouchTarget.minimum,
+    justifyContent: 'center',
   },
   sendDisabled: {
     opacity: 0.4,

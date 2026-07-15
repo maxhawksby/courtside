@@ -3,13 +3,22 @@ import { useCallback, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet } from 'react-native';
 import type { ChannelRow } from '@courtside/shared';
 
+import Animated, { FadeInDown } from 'react-native-reanimated';
+
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { EmptyState } from '@/components/ui/empty-state';
+import { PrimaryButton } from '@/components/ui/primary-button';
 import { ChannelListRow } from '@/features/messaging/components/channel-list-row';
 import { listChannels } from '@/lib/data';
 import { useOrg } from '@/lib/org-context';
+
+// Entrance cascade (DESIGN.md §4: one orchestrated entrance per screen).
+// No motion tokens exist yet — flagged in DESIGN.md §5.
+const ENTRANCE_STAGGER_MS = 40;
+const ENTRANCE_DURATION_MS = 250;
+const ENTRANCE_STAGGER_CAP = 12;
 
 export default function ChannelsIndexScreen() {
   const router = useRouter();
@@ -81,6 +90,7 @@ export default function ChannelsIndexScreen() {
       {error ? (
         <ThemedView style={styles.centered}>
           <ThemedText themeColor="textSecondary">{error}</ThemedText>
+          <PrimaryButton label="Try again" onPress={() => void load()} />
         </ThemedView>
       ) : loading ? (
         <ThemedView style={styles.centered}>
@@ -97,8 +107,13 @@ export default function ChannelsIndexScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
-          renderItem={({ item }) => (
-            <ChannelListRow channel={item} onPress={() => router.push(`/(app)/channels/${item.id}`)} />
+          renderItem={({ item, index }) => (
+            <Animated.View
+              entering={FadeInDown.delay(Math.min(index, ENTRANCE_STAGGER_CAP) * ENTRANCE_STAGGER_MS).duration(
+                ENTRANCE_DURATION_MS,
+              )}>
+              <ChannelListRow channel={item} onPress={() => router.push(`/(app)/channels/${item.id}`)} />
+            </Animated.View>
           )}
         />
       )}
