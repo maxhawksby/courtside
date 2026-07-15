@@ -6,10 +6,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Brand, Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PrimaryButton } from '@/components/ui/primary-button';
 import { TeamListRow } from '@/features/teams/components/team-list-row';
+import { useTheme } from '@/hooks/use-theme';
 import { listTeams, type TeamWithDivision } from '@/lib/data';
 import { useOrg } from '@/lib/org-context';
 
@@ -37,6 +38,7 @@ function groupByDivision(teams: TeamWithDivision[]): { label: string; teams: Tea
 }
 
 export default function TeamsIndexScreen() {
+  const theme = useTheme();
   const { activeOrg, loading: orgLoading } = useOrg();
   // Rows are stored with the org they were fetched for, so a stale list can
   // never render under another org's screen (it derives to [] on mismatch).
@@ -133,8 +135,10 @@ export default function TeamsIndexScreen() {
         )}
 
         {!loading && error && (
-          <ThemedView type="backgroundElement" style={styles.errorCard}>
-            <ThemedText type="smallBold" style={styles.errorTitle}>
+          <ThemedView
+            type="backgroundElement"
+            style={[styles.errorCard, { borderColor: theme.border }]}>
+            <ThemedText type="smallBold" style={{ color: theme.danger }}>
               Couldn&apos;t load teams
             </ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
@@ -190,7 +194,7 @@ export default function TeamsIndexScreen() {
           ))}
 
         {!loading && !error && (
-          <Pressable onPress={() => setShowArchived((v) => !v)} hitSlop={8}>
+          <Pressable onPress={() => setShowArchived((v) => !v)} hitSlop={12}>
             <ThemedText type="small" themeColor="textSecondary" style={styles.archivedToggle}>
               {showArchived ? 'Hide archived teams' : 'Show archived teams'}
             </ThemedText>
@@ -222,12 +226,10 @@ const styles = StyleSheet.create({
   },
   errorCard: {
     gap: Spacing.two,
-    borderRadius: Spacing.three,
+    borderRadius: Radius.card,
+    borderWidth: StyleSheet.hairlineWidth,
     padding: Spacing.four,
     alignItems: 'flex-start',
-  },
-  errorTitle: {
-    color: Brand.danger,
   },
   group: {
     gap: Spacing.two,

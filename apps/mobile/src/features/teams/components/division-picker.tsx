@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing, TouchTarget } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { DivisionRow } from '@courtside/shared';
 
@@ -38,19 +38,19 @@ export function DivisionPicker({
 
   return (
     <View style={styles.container}>
-      <Pressable onPress={() => onSelect(null)}>
+      <Pressable onPress={() => onSelect(null)} hitSlop={4}>
         <ThemedView
           type={selectedDivisionId === null ? 'backgroundSelected' : 'backgroundElement'}
-          style={styles.option}>
+          style={[styles.option, { borderColor: theme.border }]}>
           <ThemedText type="small">No division</ThemedText>
         </ThemedView>
       </Pressable>
 
       {divisions.map((division) => (
-        <Pressable key={division.id} onPress={() => onSelect(division.id)}>
+        <Pressable key={division.id} onPress={() => onSelect(division.id)} hitSlop={4}>
           <ThemedView
             type={selectedDivisionId === division.id ? 'backgroundSelected' : 'backgroundElement'}
-            style={styles.option}>
+            style={[styles.option, { borderColor: theme.border }]}>
             <ThemedText type="small">{division.name}</ThemedText>
           </ThemedView>
         </Pressable>
@@ -62,7 +62,7 @@ export function DivisionPicker({
           onChangeText={setNewDivisionName}
           placeholder="New division name"
           placeholderTextColor={theme.textSecondary}
-          style={[styles.input, { color: theme.text, borderColor: theme.backgroundSelected }]}
+          style={[styles.input, { color: theme.text, borderColor: theme.border }]}
         />
         <Pressable
           onPress={handleCreate}
@@ -74,7 +74,9 @@ export function DivisionPicker({
               opacity: creating || !newDivisionName.trim() ? 0.5 : pressed ? 0.7 : 1,
             },
           ]}>
-          <ThemedText type="small">Add</ThemedText>
+          <ThemedText type="small" themeColor="tint">
+            Add
+          </ThemedText>
         </Pressable>
       </View>
     </View>
@@ -86,9 +88,12 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   option: {
-    borderRadius: Spacing.two,
+    borderRadius: Radius.card,
+    borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
+    minHeight: TouchTarget.minimum,
+    justifyContent: 'center',
   },
   newDivisionRow: {
     flexDirection: 'row',
@@ -99,14 +104,19 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: Spacing.two,
+    borderRadius: Radius.input,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
+    minHeight: TouchTarget.minimum,
     fontSize: 14,
   },
   addButton: {
-    borderRadius: Spacing.two,
+    borderRadius: Radius.pill,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
+    minHeight: TouchTarget.minimum,
+    minWidth: TouchTarget.minimum,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
