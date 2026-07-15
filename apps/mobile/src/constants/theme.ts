@@ -48,7 +48,8 @@ export const Colors = {
     /** Celebration only (records, achievements, Home sunrise). */
     gold: Brand.gold,
     danger: Brand.danger,
-    success: '#1E8A4C',
+    /** Darkened from #1E8A4C: 17pt regular on white needs ≥4.5:1 (this is 6.6:1). */
+    success: '#166B3B',
   },
   dark: {
     text: '#F4F5F7',
@@ -106,6 +107,8 @@ export const Spacing = {
 
 /** Deliberate radius scale — not one radius everywhere. */
 export const Radius = {
+  /** Chat-bubble tail corner (accepted design_proposal, 2026-07-15). */
+  tail: 4,
   /** Inputs and small chips. */
   input: 10,
   /** Cards and list rows. */
