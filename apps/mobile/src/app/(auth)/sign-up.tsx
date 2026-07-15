@@ -1,11 +1,12 @@
 import { Link } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, TextInput } from 'react-native';
+import { StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Brand, Colors, MaxContentWidth, Spacing } from '@/constants/theme';
+import { PrimaryButton } from '@/components/ui/primary-button';
+import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 
@@ -37,7 +38,7 @@ export default function SignUpScreen() {
 
         <ThemedView type="backgroundElement" style={styles.form}>
           <TextInput
-            style={[styles.input, { color: theme.text }]}
+            style={[styles.input, { color: theme.text, borderColor: theme.border }]}
             placeholder="Email"
             placeholderTextColor={theme.textSecondary}
             autoCapitalize="none"
@@ -48,7 +49,7 @@ export default function SignUpScreen() {
             onChangeText={setEmail}
           />
           <TextInput
-            style={[styles.input, { color: theme.text }]}
+            style={[styles.input, { color: theme.text, borderColor: theme.border }]}
             placeholder="Password"
             placeholderTextColor={theme.textSecondary}
             autoCapitalize="none"
@@ -59,21 +60,16 @@ export default function SignUpScreen() {
           />
 
           {error ? (
-            <ThemedText themeColor="text" style={styles.error}>
+            <ThemedText type="small" themeColor="danger">
               {error}
             </ThemedText>
           ) : null}
 
-          <Pressable
-            style={[styles.button, submitting && styles.buttonDisabled]}
+          <PrimaryButton
+            label={submitting ? 'Creating account…' : 'Sign up'}
+            onPress={() => void handleSubmit()}
             disabled={submitting || !email || !password}
-            onPress={handleSubmit}>
-            {submitting ? (
-              <ActivityIndicator color={Brand.onPrimary} />
-            ) : (
-              <ThemedText style={styles.buttonText}>Sign up</ThemedText>
-            )}
-          </Pressable>
+          />
         </ThemedView>
 
         <Link href="/sign-in">
@@ -105,31 +101,13 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     gap: Spacing.three,
     padding: Spacing.four,
-    borderRadius: Spacing.four,
+    borderRadius: Radius.card,
   },
   input: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: Colors.light.textSecondary,
-    borderRadius: Spacing.two,
+    borderRadius: Radius.input,
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    fontSize: 16,
-  },
-  error: {
-    color: Brand.danger,
-  },
-  button: {
-    backgroundColor: Brand.primary,
-    borderRadius: Spacing.two,
     paddingVertical: Spacing.three,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: Brand.onPrimary,
-    fontWeight: '600',
+    fontSize: 17,
   },
 });

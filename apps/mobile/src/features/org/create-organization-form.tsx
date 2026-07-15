@@ -1,12 +1,18 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, TextInput } from 'react-native';
+import { StyleSheet, TextInput } from 'react-native';
+import Animated, { Easing, FadeInDown } from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Brand, Colors, Spacing } from '@/constants/theme';
+import { PrimaryButton } from '@/components/ui/primary-button';
+import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { createOrganization } from '@/lib/data';
 import { useOrg } from '@/lib/org-context';
+
+/** Matches Home's staggered-entrance cadence (DESIGN.md §4) — this form is
+ * Home's sole section when no organization exists yet. */
+const entering = FadeInDown.duration(280).easing(Easing.out(Easing.cubic));
 
 export function CreateOrganizationForm() {
   const { refreshOrgs } = useOrg();
@@ -30,71 +36,53 @@ export function CreateOrganizationForm() {
   };
 
   return (
-    <ThemedView type="backgroundElement" style={styles.form}>
-      <ThemedText type="subtitle">Create your organization</ThemedText>
-      <ThemedText themeColor="textSecondary">
-        You are not part of an organization yet. Create one to get started.
-      </ThemedText>
-
-      <TextInput
-        style={[styles.input, { color: theme.text }]}
-        placeholder="Organization name"
-        placeholderTextColor={theme.textSecondary}
-        autoCapitalize="words"
-        value={name}
-        onChangeText={setName}
-      />
-
-      {error ? (
-        <ThemedText themeColor="text" style={styles.error}>
-          {error}
+    <Animated.View entering={entering} style={styles.wrap}>
+      <ThemedView type="backgroundElement" style={styles.form}>
+        <ThemedText type="subtitle">Create your organization</ThemedText>
+        <ThemedText themeColor="textSecondary">
+          You are not part of an organization yet. Create one to get started.
         </ThemedText>
-      ) : null}
 
-      <Pressable
-        style={[styles.button, submitting && styles.buttonDisabled]}
-        disabled={submitting || !name.trim()}
-        onPress={handleSubmit}>
-        {submitting ? (
-          <ActivityIndicator color={Brand.onPrimary} />
-        ) : (
-          <ThemedText style={styles.buttonText}>Create organization</ThemedText>
-        )}
-      </Pressable>
-    </ThemedView>
+        <TextInput
+          style={[styles.input, { color: theme.text, borderColor: theme.border }]}
+          placeholder="Organization name"
+          placeholderTextColor={theme.textSecondary}
+          autoCapitalize="words"
+          value={name}
+          onChangeText={setName}
+        />
+
+        {error ? (
+          <ThemedText type="small" themeColor="danger">
+            {error}
+          </ThemedText>
+        ) : null}
+
+        <PrimaryButton
+          label={submitting ? 'Creating…' : 'Create organization'}
+          onPress={() => void handleSubmit()}
+          disabled={submitting || !name.trim()}
+        />
+      </ThemedView>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
+  wrap: {
+    alignSelf: 'stretch',
+  },
   form: {
     alignSelf: 'stretch',
     gap: Spacing.three,
     padding: Spacing.four,
-    borderRadius: Spacing.four,
+    borderRadius: Radius.card,
   },
   input: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: Colors.light.textSecondary,
-    borderRadius: Spacing.two,
+    borderRadius: Radius.input,
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    fontSize: 16,
-  },
-  error: {
-    color: Brand.danger,
-  },
-  button: {
-    backgroundColor: Brand.primary,
-    borderRadius: Spacing.two,
     paddingVertical: Spacing.three,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: Brand.onPrimary,
-    fontWeight: '600',
+    fontSize: 17,
   },
 });
