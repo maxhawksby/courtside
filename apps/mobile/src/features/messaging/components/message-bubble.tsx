@@ -90,12 +90,10 @@ const styles = StyleSheet.create({
   },
   bubbleOwn: {
     // Smaller corner reads as a speech-bubble "tail" pointing at the sender.
-    // No dedicated micro-radius token exists yet — flagged in the handoff
-    // (DESIGN.md §5); Radius.input is the closest existing value.
-    borderBottomRightRadius: Radius.input,
+    borderBottomRightRadius: Radius.tail,
   },
   bubbleOther: {
-    borderBottomLeftRadius: Radius.input,
+    borderBottomLeftRadius: Radius.tail,
   },
   tombstone: {
     fontStyle: 'italic',
