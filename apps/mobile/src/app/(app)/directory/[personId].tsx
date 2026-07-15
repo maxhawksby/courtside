@@ -6,6 +6,7 @@ import type { PersonRow, PersonSensitiveRow } from '@courtside/shared';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { PrimaryButton } from '@/components/ui/primary-button';
 import { Spacing } from '@/constants/theme';
 import {
   getEffectiveConsent,
@@ -110,6 +111,7 @@ export default function PersonDetailScreen() {
       <ThemedView style={styles.centered}>
         <Stack.Screen options={{ title: 'Person' }} />
         <ThemedText themeColor="textSecondary">{error ?? 'Person not found'}</ThemedText>
+        {error ? <PrimaryButton label="Try again" onPress={() => void load()} /> : null}
       </ThemedView>
     );
   }
@@ -169,6 +171,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: Spacing.three,
     paddingHorizontal: Spacing.four,
   },
   content: {

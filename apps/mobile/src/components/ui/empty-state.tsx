@@ -2,7 +2,7 @@ import { StyleSheet } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 
 type EmptyStateProps = {
   title: string;
@@ -23,7 +23,7 @@ export function EmptyState({ title, body }: EmptyStateProps) {
 const styles = StyleSheet.create({
   container: {
     gap: Spacing.two,
-    borderRadius: Spacing.three,
+    borderRadius: Radius.card,
     padding: Spacing.four,
   },
 });

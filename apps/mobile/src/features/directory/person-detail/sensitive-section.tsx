@@ -5,7 +5,7 @@ import type { PersonSensitiveRow } from '@courtside/shared';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { PrimaryButton } from '@/components/ui/primary-button';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing, TouchTarget } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { upsertSensitive } from '@/lib/data';
 
@@ -61,7 +61,7 @@ export function SensitiveSection({ orgId, personId, sensitive, onSaved }: Sensit
   return (
     <View style={styles.section}>
       <ThemedText type="smallBold">Sensitive info</ThemedText>
-      <ThemedView type="backgroundElement" style={styles.card}>
+      <ThemedView type="backgroundElement" style={[styles.card, { borderColor: theme.border }]}>
         <ThemedText type="small" themeColor="textSecondary">
           Medical notes
         </ThemedText>
@@ -72,7 +72,7 @@ export function SensitiveSection({ orgId, personId, sensitive, onSaved }: Sensit
           placeholderTextColor={theme.textSecondary}
           multiline
           numberOfLines={4}
-          style={[styles.multiline, { color: theme.text, backgroundColor: theme.background }]}
+          style={[styles.multiline, { color: theme.text, backgroundColor: theme.background, borderColor: theme.border }]}
         />
 
         <ThemedText type="small" themeColor="textSecondary">
@@ -83,7 +83,7 @@ export function SensitiveSection({ orgId, personId, sensitive, onSaved }: Sensit
           onChangeText={setContactName}
           placeholder="Name"
           placeholderTextColor={theme.textSecondary}
-          style={[styles.input, { color: theme.text, backgroundColor: theme.background }]}
+          style={[styles.input, { color: theme.text, backgroundColor: theme.background, borderColor: theme.border }]}
         />
         <TextInput
           value={contactPhone}
@@ -91,7 +91,7 @@ export function SensitiveSection({ orgId, personId, sensitive, onSaved }: Sensit
           placeholder="Phone"
           placeholderTextColor={theme.textSecondary}
           keyboardType="phone-pad"
-          style={[styles.input, { color: theme.text, backgroundColor: theme.background }]}
+          style={[styles.input, { color: theme.text, backgroundColor: theme.background, borderColor: theme.border }]}
         />
 
         {error ? (
@@ -100,7 +100,7 @@ export function SensitiveSection({ orgId, personId, sensitive, onSaved }: Sensit
           </ThemedText>
         ) : null}
         {saved && !error ? (
-          <ThemedText type="small" themeColor="textSecondary">
+          <ThemedText type="small" themeColor="success">
             Saved.
           </ThemedText>
         ) : null}
@@ -120,18 +120,22 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   card: {
-    borderRadius: Spacing.three,
+    borderRadius: Radius.card,
+    borderWidth: StyleSheet.hairlineWidth,
     padding: Spacing.four,
     gap: Spacing.two,
   },
   input: {
-    borderRadius: Spacing.two,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.input,
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
+    minHeight: TouchTarget.minimum,
     fontSize: 16,
   },
   multiline: {
-    borderRadius: Spacing.two,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.input,
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
     fontSize: 16,

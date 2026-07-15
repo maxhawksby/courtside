@@ -5,9 +5,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { PrimaryButton } from '@/components/ui/primary-button';
+import { Radius, Spacing } from '@/constants/theme';
 import { RsvpAnswerRow } from '@/features/events/components/rsvp-answer-row';
 import { EVENT_TYPE_LABELS, formatDateTime } from '@/features/events/format';
+import { useTheme } from '@/hooks/use-theme';
 import {
   clearRsvp,
   getEvent,
@@ -28,6 +30,7 @@ function personName(person: { first_name: string; last_name: string } | null): s
 
 export default function EventDetailScreen() {
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
+  const theme = useTheme();
   const { activeOrg } = useOrg();
 
   const [event, setEvent] = useState<EventRow | null>(null);
@@ -127,6 +130,7 @@ export default function EventDetailScreen() {
         <ThemedText type="small" themeColor="textSecondary">
           {error ?? 'Event not found'}
         </ThemedText>
+        {error ? <PrimaryButton label="Try again" onPress={() => void load()} /> : null}
       </ThemedView>
     );
   }
@@ -138,7 +142,7 @@ export default function EventDetailScreen() {
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
       <Stack.Screen options={{ title: event.title ?? EVENT_TYPE_LABELS[event.type] }} />
       <ScrollView contentContainerStyle={styles.content}>
-        <ThemedView type="backgroundElement" style={styles.headerCard}>
+        <ThemedView type="backgroundElement" style={[styles.headerCard, { borderColor: theme.border }]}>
           <ThemedView type="backgroundSelected" style={styles.badge}>
             <ThemedText type="small">{EVENT_TYPE_LABELS[event.type]}</ThemedText>
           </ThemedView>
@@ -189,7 +193,7 @@ export default function EventDetailScreen() {
             </View>
           )}
           {error && (
-            <ThemedText type="small" themeColor="text">
+            <ThemedText type="small" themeColor="danger">
               {error}
             </ThemedText>
           )}
@@ -199,7 +203,7 @@ export default function EventDetailScreen() {
           <ThemedText type="smallBold">Attendees</ThemedText>
 
           <View style={styles.attendeeGroup}>
-            <ThemedText type="small" themeColor="textSecondary">
+            <ThemedText type="small" themeColor="success">
               Going ({going.length})
             </ThemedText>
             {going.length === 0 ? (
@@ -216,7 +220,7 @@ export default function EventDetailScreen() {
           </View>
 
           <View style={styles.attendeeGroup}>
-            <ThemedText type="small" themeColor="textSecondary">
+            <ThemedText type="small" themeColor="danger">
               Not going ({notGoing.length})
             </ThemedText>
             {notGoing.length === 0 ? (
@@ -246,13 +250,14 @@ const styles = StyleSheet.create({
     gap: Spacing.four,
   },
   headerCard: {
-    borderRadius: Spacing.three,
+    borderRadius: Radius.card,
+    borderWidth: StyleSheet.hairlineWidth,
     padding: Spacing.four,
     gap: Spacing.two,
   },
   badge: {
     alignSelf: 'flex-start',
-    borderRadius: Spacing.two,
+    borderRadius: Radius.pill,
     paddingHorizontal: Spacing.two,
     paddingVertical: Spacing.half,
   },
@@ -272,6 +277,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: Spacing.three,
     paddingHorizontal: Spacing.four,
   },
 });

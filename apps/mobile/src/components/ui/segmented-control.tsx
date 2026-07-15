@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing, TouchTarget } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 type Option<T extends string> = { value: T; label: string };
@@ -20,18 +20,15 @@ export function SegmentedControl<T extends string>({
   const theme = useTheme();
 
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
       {options.map((option) => {
         const selected = option.value === value;
         return (
           <Pressable
             key={option.value}
             onPress={() => onChange(option.value)}
-            style={[
-              styles.segment,
-              { backgroundColor: selected ? theme.backgroundSelected : theme.backgroundElement },
-            ]}>
-            <ThemedText type="small" themeColor={selected ? 'text' : 'textSecondary'}>
+            style={[styles.segment, { backgroundColor: selected ? theme.backgroundSelected : 'transparent' }]}>
+            <ThemedText type="small" themeColor={selected ? 'tint' : 'textSecondary'}>
               {option.label}
             </ThemedText>
           </Pressable>
@@ -44,11 +41,17 @@ export function SegmentedControl<T extends string>({
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
-    gap: Spacing.one,
+    gap: Spacing.half,
+    borderRadius: Radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: Spacing.half,
   },
   segment: {
+    flex: 1,
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    borderRadius: Spacing.two,
+    minHeight: TouchTarget.minimum,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

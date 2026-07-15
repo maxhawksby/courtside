@@ -4,7 +4,7 @@ import { ORG_ROLES, type DivisionRow, type OrgRole, type RoleScope } from '@cour
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing, TouchTarget } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { PrimaryButton } from '@/components/ui/primary-button';
@@ -189,7 +189,7 @@ export function GrantRoleSheet({ visible, onClose, orgId, onGranted }: GrantRole
       <ThemedView style={styles.sheet}>
         <View style={styles.sheetHeader}>
           <ThemedText type="subtitle">Grant role</ThemedText>
-          <Pressable onPress={onClose} hitSlop={8}>
+          <Pressable onPress={onClose} hitSlop={12} style={styles.tapTarget}>
             <ThemedText type="link">Close</ThemedText>
           </Pressable>
         </View>
@@ -206,7 +206,7 @@ export function GrantRoleSheet({ visible, onClose, orgId, onGranted }: GrantRole
                     ? `${selectedMember.persons.first_name} ${selectedMember.persons.last_name}`
                     : 'Unlinked member'}
                 </ThemedText>
-                <Pressable onPress={() => setSelectedMember(null)}>
+                <Pressable onPress={() => setSelectedMember(null)} hitSlop={12} style={styles.tapTarget}>
                   <ThemedText type="link" themeColor="textSecondary">
                     Change
                   </ThemedText>
@@ -219,13 +219,15 @@ export function GrantRoleSheet({ visible, onClose, orgId, onGranted }: GrantRole
                   onChangeText={setSearch}
                   placeholder="Search members"
                   placeholderTextColor={theme.textSecondary}
-                  style={[styles.input, { color: theme.text, borderColor: theme.backgroundSelected }]}
+                  style={[styles.input, { color: theme.text, borderColor: theme.border }]}
                 />
                 {membersLoading && <ActivityIndicator />}
                 {!membersLoading &&
                   filteredMembers.map((member) => (
                     <Pressable key={member.user_id} onPress={() => setSelectedMember(member)}>
-                      <ThemedView type="backgroundElement" style={styles.optionRow}>
+                      <ThemedView
+                        type="backgroundElement"
+                        style={[styles.optionRow, { borderColor: theme.border }]}>
                         <ThemedText type="small">
                           {member.persons
                             ? `${member.persons.first_name} ${member.persons.last_name}`
@@ -252,7 +254,7 @@ export function GrantRoleSheet({ visible, onClose, orgId, onGranted }: GrantRole
                 <Pressable key={option} onPress={() => setRole(option)}>
                   <ThemedView
                     type={role === option ? 'backgroundSelected' : 'backgroundElement'}
-                    style={styles.optionRow}>
+                    style={[styles.optionRow, { borderColor: theme.border }]}>
                     <ThemedText type="small">{ROLE_LABELS[option]}</ThemedText>
                   </ThemedView>
                 </Pressable>
@@ -274,7 +276,7 @@ export function GrantRoleSheet({ visible, onClose, orgId, onGranted }: GrantRole
                     <Pressable key={division.id} onPress={() => setDivisionId(division.id)}>
                       <ThemedView
                         type={divisionId === division.id ? 'backgroundSelected' : 'backgroundElement'}
-                        style={styles.optionRow}>
+                        style={[styles.optionRow, { borderColor: theme.border }]}>
                         <ThemedText type="small">{division.name}</ThemedText>
                       </ThemedView>
                     </Pressable>
@@ -295,7 +297,7 @@ export function GrantRoleSheet({ visible, onClose, orgId, onGranted }: GrantRole
                     <Pressable key={team.id} onPress={() => setTeamId(team.id)}>
                       <ThemedView
                         type={teamId === team.id ? 'backgroundSelected' : 'backgroundElement'}
-                        style={styles.optionRow}>
+                        style={[styles.optionRow, { borderColor: theme.border }]}>
                         <ThemedText type="small">{team.name}</ThemedText>
                       </ThemedView>
                     </Pressable>
@@ -310,7 +312,7 @@ export function GrantRoleSheet({ visible, onClose, orgId, onGranted }: GrantRole
           </View>
 
           {error && (
-            <ThemedText type="small" themeColor="text">
+            <ThemedText type="small" style={{ color: theme.danger }}>
               {error}
             </ThemedText>
           )}
@@ -351,16 +353,24 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  tapTarget: {
+    minHeight: TouchTarget.minimum,
+    justifyContent: 'center',
+  },
   input: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: Spacing.two,
+    borderRadius: Radius.input,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
-    fontSize: 14,
+    minHeight: TouchTarget.minimum,
+    fontSize: 15,
   },
   optionRow: {
-    borderRadius: Spacing.two,
+    borderRadius: Radius.card,
+    borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
+    minHeight: TouchTarget.minimum,
+    justifyContent: 'center',
   },
 });

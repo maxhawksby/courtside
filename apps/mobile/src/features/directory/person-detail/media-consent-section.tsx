@@ -5,7 +5,7 @@ import type { MediaConsentRow } from '@courtside/shared';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { PrimaryButton } from '@/components/ui/primary-button';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing, TouchTarget } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getEffectiveConsent, listConsentHistory, setConsent } from '@/lib/data';
 
@@ -77,15 +77,17 @@ export function MediaConsentSection({
   return (
     <View style={styles.section}>
       <ThemedText type="smallBold">Media consent</ThemedText>
-      <ThemedView type="backgroundElement" style={styles.stateCard}>
-        <ThemedText>{consent ? 'Photos allowed' : 'No consent on file — media hidden'}</ThemedText>
+      <ThemedView type="backgroundElement" style={[styles.stateCard, { borderColor: theme.border }]}>
+        <ThemedText themeColor={consent ? 'success' : 'textSecondary'}>
+          {consent ? 'Photos allowed' : 'No consent on file — media hidden'}
+        </ThemedText>
 
         <TextInput
           value={note}
           onChangeText={setNote}
           placeholder="Note (optional)"
           placeholderTextColor={theme.textSecondary}
-          style={[styles.input, { color: theme.text, backgroundColor: theme.background }]}
+          style={[styles.input, { color: theme.text, backgroundColor: theme.background, borderColor: theme.border }]}
         />
 
         {error ? (
@@ -119,7 +121,9 @@ export function MediaConsentSection({
         ) : (
           history.map((row) => (
             <View key={row.id} style={styles.historyRow}>
-              <ThemedText type="small">{row.granted ? 'Granted' : 'Revoked'}</ThemedText>
+              <ThemedText type="small" themeColor={row.granted ? 'success' : 'danger'}>
+                {row.granted ? 'Granted' : 'Revoked'}
+              </ThemedText>
               <ThemedText type="small" themeColor="textSecondary">
                 {new Date(row.created_at).toLocaleDateString()}
               </ThemedText>
@@ -141,14 +145,17 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   stateCard: {
-    borderRadius: Spacing.three,
+    borderRadius: Radius.card,
+    borderWidth: StyleSheet.hairlineWidth,
     padding: Spacing.four,
     gap: Spacing.two,
   },
   input: {
-    borderRadius: Spacing.two,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.input,
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
+    minHeight: TouchTarget.minimum,
     fontSize: 16,
   },
   actionsRow: {

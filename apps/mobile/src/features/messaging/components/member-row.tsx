@@ -2,7 +2,8 @@ import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing, TouchTarget } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import type { UserProfileWithPerson } from '@/lib/data';
 
 function displayName(profile: UserProfileWithPerson): string {
@@ -23,20 +24,21 @@ type MemberRowProps = {
 };
 
 export function MemberRow({ profile, onPress, selected, busy, errorText }: MemberRowProps) {
+  const theme = useTheme();
   return (
     <View>
       <Pressable onPress={onPress} disabled={busy} hitSlop={4}>
         {({ pressed }) => (
           <ThemedView
             type={selected ? 'backgroundSelected' : 'backgroundElement'}
-            style={[styles.row, pressed && styles.pressed]}>
+            style={[styles.row, { borderColor: theme.border }, pressed && styles.pressed]}>
             <ThemedText>{displayName(profile)}</ThemedText>
             {busy ? <ActivityIndicator /> : null}
           </ThemedView>
         )}
       </Pressable>
       {errorText ? (
-        <ThemedText type="small" style={styles.error}>
+        <ThemedText type="small" style={[styles.error, { color: theme.danger }]}>
           {errorText}
         </ThemedText>
       ) : null}
@@ -49,9 +51,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderRadius: Spacing.two,
+    borderRadius: Radius.card,
+    borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.three,
+    minHeight: TouchTarget.minimum,
     marginBottom: Spacing.two,
   },
   pressed: {

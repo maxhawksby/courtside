@@ -28,32 +28,51 @@ Single source of truth: `apps/mobile/src/constants/theme.ts`. Mirrored for the a
 components are frozen contracts — FE lane and subagents never edit them; changes are
 proposals to PM (see §5).
 
-- **Colors** (light/dark): `text`, `background`, `backgroundElement`, `backgroundSelected`,
-  `textSecondary`. Five roles, both schemes — every screen must be designed in both.
-- **Brand** (scheme-independent): `primary #208AEF`, gradient stops `#3C9FFE → #0274DF`,
-  `onPrimary`, `link`, `danger`, `imagePlaceholder`.
-  **Provisional (PM decision 2026-07-14):** the real brand palette will be derived from
-  the client's logo, arriving next development iteration. Until then `PrimaryButton`
-  deliberately stays neutral (`backgroundSelected`) — do not re-propose brand color on
-  buttons; the open `design_proposal` is parked, not forgotten.
-  Also parked with the logo-palette work (PM decision 2026-07-14, FE-4 proposal):
-  per-scheme semantic `danger` — `Brand.danger #d92c2c` is ~3.5:1 on dark
-  `backgroundElement`, borderline for small text. Until the semantic role lands, use
-  `Brand.danger` with a bold/large weight on dark surfaces; do not re-propose.
+- **Colors** (light/dark): `text`, `textSecondary`, `background`, `backgroundElement`,
+  `backgroundSelected`, `border`, `tint`, `onTint`, `accent`, `gold`, `danger`,
+  `success`. Twelve roles, both schemes — every screen must be designed in both.
+  Light mode is a warm off-white page (`#F7F6F2`) with pure-white cards; dark mode is
+  navy (`#0C1120`), never pure black, so the brand blue still reads.
+- **Brand** (scheme-independent, from the R&G Hoops logo — landed 2026-07-15, resolving
+  the parked 2026-07-14 decision): `primary #2148C8` (royal blue, the logo outline),
+  gradient stops `#2E5AE0 → #18337F`, `onPrimary`, `link`, `orange #F08019` (the
+  basketball), `gold #FDB515` (the sunburst), `danger`, `imagePlaceholder`. Prefer the
+  semantic `Colors` tokens; reach for `Brand.*` only where a color must not flip with
+  the scheme (hero gradient, overlays on photos, image placeholder). The FE-4 dark-mode
+  danger proposal is resolved: use `theme.danger` (per-scheme) everywhere.
+- **Color roles are strict.** `tint` is THE interactive color — if it's tappable and
+  primary, it's blue; `accent` (orange) marks energy only (live indicators, unread
+  badges, "now") and is never a button background; `gold` marks celebration only
+  (records, achievements, the Home sunrise) and is never body text on a light
+  background. Orange and gold never compete with blue for "press me".
 - **Fonts**: platform system fonts via `Platform.select` — **by design** (native feel,
   zero font-loading cost). This overrides the generic "never system fonts" rule: type
   personality here comes from scale, weight, and spacing, not typeface.
 - **Spacing**: `half:2, one:4, two:8, three:16, four:24, five:32, six:64`. Every margin,
-  padding, gap, and radius comes from this scale.
+  padding, and gap comes from this scale.
+- **Radius** (`Radius.*`): `input 10`, `card 14`, `sheet 20`, `pill` for buttons and
+  segmented controls. A deliberate scale — never one radius everywhere, never a magic
+  number.
+- **Touch** (`TouchTarget.*`): every tappable element ≥ `minimum` (44pt) in both axes;
+  primary buttons are `comfortable` (50pt) tall. The audience skews older — when in
+  doubt, bigger.
 - **Layout**: `MaxContentWidth 800`, `BottomTabInset` per platform.
 
 ## 3. Component idiom (match exactly)
 
 - Function component → `const theme = useTheme()` → `StyleSheet.create` at the bottom
-  using `Spacing.*`; dynamic colors passed inline from `theme.*` / `Brand.*`.
-- Text is `ThemedText` with its variants — `title` 48/52 w600, `subtitle` 32/44 w600,
-  `default` 16/24 w500, `small` 14/20 w500, `smallBold` 14/20 w700, `link`/`linkPrimary`,
-  `code`. Surfaces are `ThemedView`.
+  using `Spacing.*` / `Radius.*`; dynamic colors passed inline from `theme.*` / `Brand.*`.
+- Text is `ThemedText` with its variants (prop API frozen; metrics below are the
+  2026-07-15 brand scale) — `title` 48/52 w800 `Fonts.rounded`, `subtitle` 32/40 w700
+  `Fonts.rounded`, `default` 17/24 w400, `small` 15/20 w500, `smallBold` 15/20 w700,
+  `link`/`linkPrimary` 17/24 colored `theme.tint`, `code` mono. Titles and button labels
+  speak in the rounded voice (SF Rounded on iOS); body stays the plain system face.
+  Body copy never renders below 15pt.
+- Buttons are pills. `PrimaryButton`: `theme.tint` background, `theme.onTint` rounded
+  w700 label, `TouchTarget.comfortable` height, `Radius.pill`. Secondary treatment:
+  `backgroundElement` pill with `theme.border` outline and `theme.tint` label.
+  Destructive: same shape on `theme.danger`. Icons never appear without a text label
+  on primary actions.
 - Reuse before invent: `ui/empty-state`, `ui/primary-button`, `ui/segmented-control`,
   `ui/collapsible`, `hint-row`. A new one-off that duplicates these is a review finding.
 
@@ -74,14 +93,24 @@ The token palette is deliberately quiet, so craft goes into everything the token
 - **Dark mode** — designed in both palettes every time, verified explicitly, never inherited
   and hoped for.
 
+## 4b. Signature moment
+
+The Home screen header carries the brand: a soft gold "sunrise" arc (react-native-svg,
+no image assets) rising behind the organization greeting — the logo's sunburst, "Rise
+and Grind" made literal. It appears exactly once in the app, on Home. Subtle: it sits
+behind content at low saturation, never fights the text, and respects both schemes.
+
+The logo PNG itself has a baked-in background — do not embed it in screens. A
+transparent export is requested from the client; until it arrives the brand shows up
+through color, shape, and the sunrise motif only.
+
 ## 5. Known gaps + proposal path
 
 The system is intentionally thin today. Installed and authorized for UI work:
 Reanimated 4, `expo-font`, `expo-linear-gradient`, `react-native-svg` (the latter two
 pre-authorized by PM decision 2026-07-14). Not installed: `moti`, `@expo-google-fonts` —
 the google-fonts one stays out on purpose; system fonts are a §2 design decision. Not in
-tokens: semantic success/warning colors, elevation/shadow scale, motion duration/easing
-tokens.
+tokens: semantic warning color, elevation/shadow scale, motion duration/easing tokens.
 
 When a screen genuinely needs more, do not hack around it (no inline hex, no unauthorized
 deps). Use the closest existing token and append a proposal block to the PM handoff:

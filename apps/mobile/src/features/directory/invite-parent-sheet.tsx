@@ -4,7 +4,7 @@ import type { InviteRow, OrgRole } from '@courtside/shared';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing, TouchTarget } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { createInvite } from '@/lib/data';
@@ -94,7 +94,7 @@ export function InviteParentSheet({
       <ThemedView style={styles.sheet}>
         <ThemedView style={styles.sheetHeader}>
           <ThemedText type="subtitle">Invite</ThemedText>
-          <Pressable onPress={onClose} hitSlop={8}>
+          <Pressable onPress={onClose} hitSlop={12} style={styles.tapTarget}>
             <ThemedText type="link">Close</ThemedText>
           </Pressable>
         </ThemedView>
@@ -106,7 +106,10 @@ export function InviteParentSheet({
               onChangeText={setEmail}
               placeholder="Email address"
               placeholderTextColor={theme.textSecondary}
-              style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
+              style={[
+                styles.input,
+                { color: theme.text, backgroundColor: theme.backgroundElement, borderColor: theme.border },
+              ]}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
@@ -120,17 +123,21 @@ export function InviteParentSheet({
                 {error}
               </ThemedText>
             ) : null}
-            <Pressable onPress={handleInvite} disabled={submitting || !email.trim()} hitSlop={4}>
+            <Pressable
+              onPress={handleInvite}
+              disabled={submitting || !email.trim()}
+              hitSlop={12}
+              style={styles.tapTarget}>
               <ThemedText type="linkPrimary">{submitting ? 'Sending…' : 'Send invite'}</ThemedText>
             </Pressable>
           </ThemedView>
         ) : (
           <ThemedView style={styles.form}>
             <ThemedText>Invite created for {invite.email}.</ThemedText>
-            <ThemedView type="backgroundElement" style={styles.tokenBox}>
+            <ThemedView type="backgroundElement" style={[styles.tokenBox, { borderColor: theme.border }]}>
               <ThemedText type="code">{invite.token}</ThemedText>
             </ThemedView>
-            <Pressable onPress={handleShare} hitSlop={4}>
+            <Pressable onPress={handleShare} hitSlop={12} style={styles.tapTarget}>
               <ThemedText type="linkPrimary">Share invite</ThemedText>
             </Pressable>
           </ThemedView>
@@ -154,14 +161,21 @@ const styles = StyleSheet.create({
   form: {
     gap: Spacing.two,
   },
+  tapTarget: {
+    minHeight: TouchTarget.minimum,
+    justifyContent: 'center',
+  },
   input: {
-    borderRadius: Spacing.two,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.input,
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
+    minHeight: TouchTarget.minimum,
     fontSize: 16,
   },
   tokenBox: {
-    borderRadius: Spacing.two,
+    borderRadius: Radius.card,
+    borderWidth: StyleSheet.hairlineWidth,
     paddingVertical: Spacing.three,
     paddingHorizontal: Spacing.three,
     alignItems: 'center',

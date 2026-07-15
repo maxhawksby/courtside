@@ -32,6 +32,15 @@ feedback first. Items graduate from here into build waves.
 
 ### Blocked / scheduled for later
 
+- **Transparent logo export from client** — the logo PNG has a baked-in background
+  (docs/assets/logo-reference.png), so it can't go in-app or become the app icon yet.
+  Ask the client for the original transparent/vector export; then do app icon +
+  splash + in-app logo placement as one small wave.
+- **ThemedText variant for button labels** — PrimaryButton hand-rolls its rounded
+  w700 17pt label because no ThemedText type fits and the type API is frozen
+  (brand-theme review finding, non-blocking). Next time the type scale opens up,
+  add a `button` variant and route PrimaryButton through it.
+
 - **Google / Apple sign-in** — needs OAuth credentials, which come with the client's
   Apple Developer and Google Play organization accounts (see CLIENT-KICKOFF critical
   path). Revisit as soon as those exist.

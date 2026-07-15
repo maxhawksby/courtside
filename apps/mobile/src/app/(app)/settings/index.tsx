@@ -6,9 +6,10 @@ import type { DivisionRow, OrgRoleRow } from '@courtside/shared';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing, TouchTarget } from '@/constants/theme';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PrimaryButton } from '@/components/ui/primary-button';
+import { useTheme } from '@/hooks/use-theme';
 import {
   listDivisions,
   listMyRoles,
@@ -25,6 +26,7 @@ import { ROLE_LABELS, friendlyRoleError, scopeLabel } from '@/features/roles/rol
 import { RoleRow } from '@/features/roles/role-row';
 
 export default function SettingsScreen() {
+  const theme = useTheme();
   const { activeOrg, loading: orgLoading } = useOrg();
 
   const [myRoles, setMyRoles] = useState<OrgRoleRow[]>([]);
@@ -92,15 +94,15 @@ export default function SettingsScreen() {
 
   if (orgLoading) {
     return (
-      <ThemedView style={styles.centered}>
-        <ActivityIndicator />
+      <ThemedView style={[styles.centered, styles.fullScreen]}>
+        <ActivityIndicator color={theme.tint} />
       </ThemedView>
     );
   }
 
   if (!activeOrg) {
     return (
-      <ThemedView style={styles.centered}>
+      <ThemedView style={[styles.centered, styles.fullScreen]}>
         <ThemedText type="small" themeColor="textSecondary">
           Select or create an organization first.
         </ThemedText>
@@ -109,92 +111,97 @@ export default function SettingsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.header}>
-          <ThemedText type="subtitle">{activeOrg.name}</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            Settings
-          </ThemedText>
-        </View>
-
-        {loading && (
-          <View style={styles.centered}>
-            <ActivityIndicator />
+    <ThemedView style={styles.fullScreen}>
+      <SafeAreaView style={styles.safeArea} edges={['bottom']}>
+        <ScrollView contentContainerStyle={styles.content}>
+          <View style={styles.header}>
+            <ThemedText type="subtitle">{activeOrg.name}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              Settings
+            </ThemedText>
           </View>
-        )}
 
-        {!loading && error && (
-          <ThemedText type="small" themeColor="text">
-            {error}
-          </ThemedText>
-        )}
+          {loading && (
+            <View style={styles.centered}>
+              <ActivityIndicator color={theme.tint} />
+            </View>
+          )}
 
-        {!loading && (
-          <View style={styles.section}>
-            <ThemedText type="smallBold">Your roles</ThemedText>
-            <View style={styles.chipRow}>
-              {myRoles.length === 0 && (
-                <ThemedText type="small" themeColor="textSecondary">
-                  No roles assigned yet.
-                </ThemedText>
-              )}
-              {myRoles.map((r) => (
-                <ThemedView key={r.id} type="backgroundElement" style={styles.chip}>
-                  <ThemedText type="small">
-                    {ROLE_LABELS[r.role]} · {scopeLabel(r, divisions, teams)}
+          {!loading && error && (
+            <ThemedText type="small" themeColor="danger">
+              {error}
+            </ThemedText>
+          )}
+
+          {!loading && (
+            <View style={styles.section}>
+              <ThemedText type="smallBold">Your roles</ThemedText>
+              <View style={styles.chipRow}>
+                {myRoles.length === 0 && (
+                  <ThemedText type="small" themeColor="textSecondary">
+                    No roles assigned yet.
                   </ThemedText>
-                </ThemedView>
-              ))}
-            </View>
-          </View>
-        )}
-
-        {!loading && isOwner && (
-          <View style={styles.section}>
-            <View style={styles.headerRow}>
-              <ThemedText type="smallBold">Role management</ThemedText>
-              <PrimaryButton label="Grant role" onPress={() => setGrantVisible(true)} />
-            </View>
-
-            {orgRoles.length === 0 ? (
-              <EmptyState
-                title="No roles yet"
-                body="Grant roles to give members access to coaching, scorekeeping, or division management tools."
-              />
-            ) : (
-              <View style={styles.rows}>
-                {orgRoles.map((r) => (
-                  <RoleRow
-                    key={r.id}
-                    role={r}
-                    scopeLabel={scopeLabel(r, divisions, teams)}
-                    onRevoke={() => handleRevoke(r)}
-                  />
+                )}
+                {myRoles.map((r) => (
+                  <ThemedView key={r.id} type="backgroundSelected" style={styles.chip}>
+                    <ThemedText type="small" themeColor="tint">
+                      {ROLE_LABELS[r.role]} · {scopeLabel(r, divisions, teams)}
+                    </ThemedText>
+                  </ThemedView>
                 ))}
               </View>
-            )}
-          </View>
-        )}
+            </View>
+          )}
 
-        {!loading && !isOwner && (
-          <ThemedText type="small" themeColor="textSecondary">
-            Contact the organization owner to request a role change.
-          </ThemedText>
-        )}
-      </ScrollView>
+          {!loading && isOwner && (
+            <View style={styles.section}>
+              <View style={styles.headerRow}>
+                <ThemedText type="smallBold">Role management</ThemedText>
+                <PrimaryButton label="Grant role" onPress={() => setGrantVisible(true)} />
+              </View>
 
-      <GrantRoleSheet
-        visible={grantVisible}
-        onClose={() => setGrantVisible(false)}
-        orgId={activeOrg.id}
-        onGranted={() => void load()}
-      />
-    </SafeAreaView>
+              {orgRoles.length === 0 ? (
+                <EmptyState
+                  title="No roles yet"
+                  body="Grant roles to give members access to coaching, scorekeeping, or division management tools."
+                />
+              ) : (
+                <View style={styles.rows}>
+                  {orgRoles.map((r) => (
+                    <RoleRow
+                      key={r.id}
+                      role={r}
+                      scopeLabel={scopeLabel(r, divisions, teams)}
+                      onRevoke={() => handleRevoke(r)}
+                    />
+                  ))}
+                </View>
+              )}
+            </View>
+          )}
+
+          {!loading && !isOwner && (
+            <ThemedText type="small" themeColor="textSecondary">
+              Contact the organization owner to request a role change.
+            </ThemedText>
+          )}
+        </ScrollView>
+
+        <GrantRoleSheet
+          visible={grantVisible}
+          onClose={() => setGrantVisible(false)}
+          orgId={activeOrg.id}
+          onGranted={() => void load()}
+        />
+      </SafeAreaView>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
+  fullScreen: {
+    flex: 1,
+  },
   safeArea: {
     flex: 1,
   },
@@ -219,15 +226,15 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   chip: {
-    borderRadius: Spacing.two,
+    borderRadius: Radius.input,
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
+    minHeight: TouchTarget.minimum,
+    justifyContent: 'center',
   },
   rows: {
     gap: Spacing.two,
   },
   centered: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: Spacing.five,

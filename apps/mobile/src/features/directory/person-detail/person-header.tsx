@@ -4,7 +4,7 @@ import type { PersonRow } from '@courtside/shared';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { PersonAvatar } from './avatar';
@@ -21,7 +21,7 @@ export function PersonHeader({ person, consent }: PersonHeaderProps) {
   const age = ageFromDateOfBirth(person.date_of_birth);
 
   return (
-    <ThemedView type="backgroundElement" style={styles.card}>
+    <ThemedView type="backgroundElement" style={[styles.card, { borderColor: theme.border }]}>
       <View style={styles.row}>
         <PersonAvatar person={person} consent={consent} />
         <View style={styles.nameBlock}>
@@ -65,7 +65,8 @@ export function PersonHeader({ person, consent }: PersonHeaderProps) {
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: Spacing.three,
+    borderRadius: Radius.card,
+    borderWidth: StyleSheet.hairlineWidth,
     padding: Spacing.four,
     gap: Spacing.two,
   },
@@ -84,7 +85,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   chip: {
-    borderRadius: Spacing.two,
+    borderRadius: Radius.pill,
     paddingHorizontal: Spacing.two,
     paddingVertical: Spacing.half,
   },

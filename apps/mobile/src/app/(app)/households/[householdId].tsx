@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { PrimaryButton } from '@/components/ui/primary-button';
 import { Spacing } from '@/constants/theme';
 import { getHousehold, removeHouseholdMember, type HouseholdWithMembers } from '@/lib/data';
 import { useOrg } from '@/lib/org-context';
@@ -89,6 +90,7 @@ export default function HouseholdDetailScreen() {
         <ThemedText type="small" themeColor="textSecondary">
           {error ?? 'Household not found'}
         </ThemedText>
+        {error ? <PrimaryButton label="Try again" onPress={() => void load()} /> : null}
       </ThemedView>
     );
   }
@@ -134,7 +136,7 @@ export default function HouseholdDetailScreen() {
             </View>
           )}
           {removeError ? (
-            <ThemedText type="small" themeColor="text">
+            <ThemedText type="small" themeColor="danger">
               {removeError}
             </ThemedText>
           ) : null}
@@ -162,6 +164,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: Spacing.three,
     paddingHorizontal: Spacing.four,
   },
   content: {

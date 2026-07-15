@@ -4,7 +4,7 @@ import type { PersonRow } from '@courtside/shared';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing, TouchTarget } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { createPerson, listPersons } from '@/lib/data';
 
@@ -87,7 +87,10 @@ export function PersonPicker({ orgId, excludePersonId, excludeIds, onSelect }: P
         onChangeText={setQuery}
         placeholder="Search by name"
         placeholderTextColor={theme.textSecondary}
-        style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
+        style={[
+          styles.input,
+          { color: theme.text, backgroundColor: theme.backgroundElement, borderColor: theme.border },
+        ]}
         autoCapitalize="words"
         autoCorrect={false}
       />
@@ -110,7 +113,7 @@ export function PersonPicker({ orgId, excludePersonId, excludeIds, onSelect }: P
 
       {results.map((person) => (
         <Pressable key={person.id} onPress={() => onSelect(person)} hitSlop={4}>
-          <ThemedView type="backgroundElement" style={styles.resultRow}>
+          <ThemedView type="backgroundElement" style={[styles.resultRow, { borderColor: theme.border }]}>
             <ThemedText>
               {person.first_name} {person.last_name}
             </ThemedText>
@@ -119,7 +122,7 @@ export function PersonPicker({ orgId, excludePersonId, excludeIds, onSelect }: P
       ))}
 
       {!showQuickCreate ? (
-        <Pressable onPress={() => setShowQuickCreate(true)} hitSlop={4}>
+        <Pressable onPress={() => setShowQuickCreate(true)} hitSlop={12} style={styles.tapTarget}>
           <ThemedText type="linkPrimary">+ Quick-create a new person</ThemedText>
         </Pressable>
       ) : (
@@ -129,7 +132,10 @@ export function PersonPicker({ orgId, excludePersonId, excludeIds, onSelect }: P
             onChangeText={setFirstName}
             placeholder="First name"
             placeholderTextColor={theme.textSecondary}
-            style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
+            style={[
+              styles.input,
+              { color: theme.text, backgroundColor: theme.backgroundElement, borderColor: theme.border },
+            ]}
             autoCapitalize="words"
           />
           <TextInput
@@ -137,13 +143,17 @@ export function PersonPicker({ orgId, excludePersonId, excludeIds, onSelect }: P
             onChangeText={setLastName}
             placeholder="Last name"
             placeholderTextColor={theme.textSecondary}
-            style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
+            style={[
+              styles.input,
+              { color: theme.text, backgroundColor: theme.backgroundElement, borderColor: theme.border },
+            ]}
             autoCapitalize="words"
           />
           <Pressable
             onPress={handleQuickCreate}
             disabled={creating || !firstName.trim() || !lastName.trim()}
-            hitSlop={4}>
+            hitSlop={12}
+            style={styles.tapTarget}>
             <ThemedText type="linkPrimary">{creating ? 'Creating…' : 'Create & select'}</ThemedText>
           </Pressable>
         </ThemedView>
@@ -157,15 +167,24 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   input: {
-    borderRadius: Spacing.two,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.input,
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
+    minHeight: TouchTarget.minimum,
     fontSize: 16,
   },
   resultRow: {
-    borderRadius: Spacing.two,
+    borderRadius: Radius.card,
+    borderWidth: StyleSheet.hairlineWidth,
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
+    minHeight: TouchTarget.minimum,
+    justifyContent: 'center',
+  },
+  tapTarget: {
+    minHeight: TouchTarget.minimum,
+    justifyContent: 'center',
   },
   quickCreate: {
     gap: Spacing.two,

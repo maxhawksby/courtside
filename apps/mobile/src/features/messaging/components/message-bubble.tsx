@@ -3,7 +3,8 @@ import type { MessageRow } from '@courtside/shared';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing, TouchTarget } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 import { Badge } from './badge';
 
@@ -22,6 +23,7 @@ type MessageBubbleProps = {
 };
 
 export function MessageBubble({ message, own, senderName, onLongPress }: MessageBubbleProps) {
+  const theme = useTheme();
   const deleted = message.deleted_at != null;
 
   return (
@@ -36,7 +38,11 @@ export function MessageBubble({ message, own, senderName, onLongPress }: Message
         disabled={!own || deleted}>
         <ThemedView
           type={own ? 'backgroundSelected' : 'backgroundElement'}
-          style={[styles.bubble, own ? styles.bubbleOwn : styles.bubbleOther]}>
+          style={[
+            styles.bubble,
+            { borderColor: theme.border },
+            own ? styles.bubbleOwn : styles.bubbleOther,
+          ]}>
           {deleted ? (
             <ThemedText type="small" themeColor="textSecondary" style={styles.tombstone}>
               Message deleted
@@ -76,15 +82,18 @@ const styles = StyleSheet.create({
     marginHorizontal: Spacing.one,
   },
   bubble: {
-    borderRadius: Spacing.three,
+    borderRadius: Radius.card,
+    borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
+    minHeight: TouchTarget.minimum,
   },
   bubbleOwn: {
-    borderBottomRightRadius: Spacing.half,
+    // Smaller corner reads as a speech-bubble "tail" pointing at the sender.
+    borderBottomRightRadius: Radius.tail,
   },
   bubbleOther: {
-    borderBottomLeftRadius: Spacing.half,
+    borderBottomLeftRadius: Radius.tail,
   },
   tombstone: {
     fontStyle: 'italic',

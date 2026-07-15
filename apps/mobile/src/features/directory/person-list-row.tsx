@@ -3,7 +3,8 @@ import { ageFromDateOfBirth, isMinor, type PersonRow } from '@courtside/shared';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing, TouchTarget } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 type PersonListRowProps = {
   person: PersonRow;
@@ -11,6 +12,7 @@ type PersonListRowProps = {
 };
 
 export function PersonListRow({ person, onPress }: PersonListRowProps) {
+  const theme = useTheme();
   const hint = person.email ?? person.phone ?? null;
   const minor = isMinor(person.date_of_birth);
   const age = ageFromDateOfBirth(person.date_of_birth);
@@ -18,7 +20,9 @@ export function PersonListRow({ person, onPress }: PersonListRowProps) {
   return (
     <Pressable onPress={onPress} hitSlop={4}>
       {({ pressed }) => (
-        <ThemedView type="backgroundElement" style={[styles.row, pressed && styles.pressed]}>
+        <ThemedView
+          type="backgroundElement"
+          style={[styles.row, { borderColor: theme.border }, pressed && styles.pressed]}>
           <View style={styles.nameRow}>
             <ThemedText>
               {person.first_name} {person.last_name}
@@ -42,10 +46,12 @@ export function PersonListRow({ person, onPress }: PersonListRowProps) {
 
 const styles = StyleSheet.create({
   row: {
-    borderRadius: Spacing.three,
+    borderRadius: Radius.card,
+    borderWidth: StyleSheet.hairlineWidth,
     paddingVertical: Spacing.three,
     paddingHorizontal: Spacing.three,
     marginBottom: Spacing.two,
+    minHeight: TouchTarget.minimum,
     gap: Spacing.half,
   },
   pressed: {
@@ -57,7 +63,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   chip: {
-    borderRadius: Spacing.two,
+    borderRadius: Radius.pill,
     paddingHorizontal: Spacing.two,
     paddingVertical: Spacing.half,
   },
