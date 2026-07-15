@@ -3,7 +3,8 @@ import type { HouseholdMemberRow, PersonRow } from '@courtside/shared';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing, TouchTarget } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 type MemberRowProps = {
   member: HouseholdMemberRow & { persons: PersonRow | null };
@@ -12,12 +13,13 @@ type MemberRowProps = {
 };
 
 export function MemberRow({ member, onRemove, removing }: MemberRowProps) {
+  const theme = useTheme();
   const name = member.persons
     ? `${member.persons.first_name} ${member.persons.last_name}`
     : 'Unknown person';
 
   return (
-    <ThemedView type="backgroundElement" style={styles.row}>
+    <ThemedView type="backgroundElement" style={[styles.row, { borderColor: theme.border }]}>
       <View style={styles.info}>
         <ThemedText type="default">
           {member.is_owner ? '★ ' : ''}
@@ -29,8 +31,8 @@ export function MemberRow({ member, onRemove, removing }: MemberRowProps) {
           </ThemedText>
         ) : null}
       </View>
-      <Pressable onPress={onRemove} disabled={removing} hitSlop={8}>
-        <ThemedText type="link" themeColor="textSecondary">
+      <Pressable onPress={onRemove} disabled={removing} hitSlop={12} style={styles.tapTarget}>
+        <ThemedText type="link" style={{ color: theme.danger }}>
           {removing ? 'Removing…' : 'Remove'}
         </ThemedText>
       </Pressable>
@@ -43,9 +45,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderRadius: Spacing.two,
+    borderRadius: Radius.card,
+    borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.three,
+    minHeight: TouchTarget.minimum,
+  },
+  tapTarget: {
+    minHeight: TouchTarget.minimum,
+    justifyContent: 'center',
   },
   info: {
     gap: Spacing.half,
