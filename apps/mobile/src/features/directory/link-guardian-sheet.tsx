@@ -4,7 +4,7 @@ import type { PersonRow } from '@courtside/shared';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing, TouchTarget } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { createGuardianship } from '@/lib/data';
 
@@ -66,7 +66,7 @@ export function LinkGuardianSheet({
       <ThemedView style={styles.sheet}>
         <ThemedView style={styles.sheetHeader}>
           <ThemedText type="subtitle">Link guardian</ThemedText>
-          <Pressable onPress={onClose} hitSlop={8}>
+          <Pressable onPress={onClose} hitSlop={12} style={styles.tapTarget}>
             <ThemedText type="link">Close</ThemedText>
           </Pressable>
         </ThemedView>
@@ -83,17 +83,20 @@ export function LinkGuardianSheet({
               onChangeText={setRelationship}
               placeholder="Relationship (optional, e.g. Mother)"
               placeholderTextColor={theme.textSecondary}
-              style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
+              style={[
+                styles.input,
+                { color: theme.text, backgroundColor: theme.backgroundElement, borderColor: theme.border },
+              ]}
             />
             {error ? (
               <ThemedText type="small" themeColor="textSecondary">
                 {error}
               </ThemedText>
             ) : null}
-            <Pressable onPress={handleLink} disabled={submitting} hitSlop={4}>
+            <Pressable onPress={handleLink} disabled={submitting} hitSlop={12} style={styles.tapTarget}>
               <ThemedText type="linkPrimary">{submitting ? 'Linking…' : 'Link guardian'}</ThemedText>
             </Pressable>
-            <Pressable onPress={() => setSelected(null)} hitSlop={4}>
+            <Pressable onPress={() => setSelected(null)} hitSlop={12} style={styles.tapTarget}>
               <ThemedText type="link">Choose someone else</ThemedText>
             </Pressable>
           </ThemedView>
@@ -117,10 +120,16 @@ const styles = StyleSheet.create({
   selectedBlock: {
     gap: Spacing.two,
   },
+  tapTarget: {
+    minHeight: TouchTarget.minimum,
+    justifyContent: 'center',
+  },
   input: {
-    borderRadius: Spacing.two,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.input,
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
+    minHeight: TouchTarget.minimum,
     fontSize: 16,
   },
 });
