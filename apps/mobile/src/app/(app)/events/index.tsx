@@ -1,19 +1,27 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PrimaryButton } from '@/components/ui/primary-button';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { EventListRow } from '@/features/events/components/event-list-row';
 import { dayKey, formatDayHeader } from '@/features/events/format';
+import { useTheme } from '@/hooks/use-theme';
 import { listEvents } from '@/lib/data';
 import { useOrg } from '@/lib/org-context';
 import type { EventRow, EventType } from '@courtside/shared';
+
+// Entrance cascade (DESIGN.md §4: one orchestrated entrance per screen).
+// No motion tokens exist yet — flagged in DESIGN.md §5.
+const ENTRANCE_STAGGER_MS = 40;
+const ENTRANCE_DURATION_MS = 250;
+const ENTRANCE_STAGGER_CAP = 12;
 
 type TypeFilter = 'all' | Extract<EventType, 'game' | 'practice'>;
 
@@ -36,6 +44,7 @@ function groupByDay(events: EventRow[]): { key: string; label: string; events: E
 }
 
 export default function EventsIndexScreen() {
+  const theme = useTheme();
   const { activeOrg, loading: orgLoading } = useOrg();
   const [events, setEvents] = useState<EventRow[]>([]);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
@@ -75,6 +84,14 @@ export default function EventsIndexScreen() {
     [events, typeFilter],
   );
   const groups = useMemo(() => groupByDay(filtered), [filtered]);
+  // Running row offset per group, computed up front so cascade delays derive
+  // from map indices instead of a counter mutated during JSX evaluation.
+  let rowsBefore = 0;
+  const groupOffsets = groups.map((group) => {
+    const offset = rowsBefore;
+    rowsBefore += group.events.length;
+    return offset;
+  });
 
   if (orgLoading) {
     return (
@@ -113,9 +130,17 @@ export default function EventsIndexScreen() {
         )}
 
         {!loading && error && (
-          <ThemedText type="small" themeColor="text">
-            {error}
-          </ThemedText>
+          <ThemedView
+            type="backgroundElement"
+            style={[styles.errorCard, { borderColor: theme.border }]}>
+            <ThemedText type="smallBold" style={{ color: theme.danger }}>
+              Couldn&apos;t load events
+            </ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              {error}
+            </ThemedText>
+            <PrimaryButton label="Try again" onPress={() => void load()} />
+          </ThemedView>
         )}
 
         {!loading && !error && groups.length === 0 && (
@@ -127,18 +152,24 @@ export default function EventsIndexScreen() {
 
         {!loading &&
           !error &&
-          groups.map((group) => (
+          groups.map((group, groupIndex) => (
             <View key={group.key} style={styles.group}>
               <ThemedText type="small" themeColor="textSecondary">
                 {group.label}
               </ThemedText>
               <View style={styles.groupRows}>
-                {group.events.map((event) => (
-                  <EventListRow
+                {group.events.map((event, rowIndex) => (
+                  <Animated.View
                     key={event.id}
-                    event={event}
-                    onPress={() => router.push(`/(app)/events/${event.id}`)}
-                  />
+                    entering={FadeInDown.delay(
+                      Math.min(groupOffsets[groupIndex] + rowIndex, ENTRANCE_STAGGER_CAP) *
+                        ENTRANCE_STAGGER_MS,
+                    ).duration(ENTRANCE_DURATION_MS)}>
+                    <EventListRow
+                      event={event}
+                      onPress={() => router.push(`/(app)/events/${event.id}`)}
+                    />
+                  </Animated.View>
                 ))}
               </View>
             </View>
@@ -166,6 +197,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: Spacing.five,
+  },
+  errorCard: {
+    gap: Spacing.two,
+    borderRadius: Radius.card,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: Spacing.four,
+    alignItems: 'flex-start',
   },
   group: {
     gap: Spacing.two,
