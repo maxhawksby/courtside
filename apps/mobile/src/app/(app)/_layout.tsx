@@ -1,6 +1,6 @@
 import { Redirect, Tabs } from 'expo-router';
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
-import type { ColorValue } from 'react-native';
+import { StyleSheet, type ColorValue } from 'react-native';
 
 import { useAuth } from '@/lib/auth';
 import { useTheme } from '@/hooks/use-theme';
@@ -25,9 +25,13 @@ export default function AppLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: theme.text,
+        tabBarActiveTintColor: theme.tint,
         tabBarInactiveTintColor: theme.textSecondary,
-        tabBarStyle: { backgroundColor: theme.background },
+        tabBarStyle: {
+          backgroundColor: theme.backgroundElement,
+          borderTopColor: theme.border,
+          borderTopWidth: StyleSheet.hairlineWidth,
+        },
       }}>
       <Tabs.Screen
         name="teams"

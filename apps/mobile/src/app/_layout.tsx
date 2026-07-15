@@ -2,6 +2,7 @@ import { DarkTheme, DefaultTheme, Slot, ThemeProvider } from 'expo-router';
 import { ActivityIndicator, useColorScheme } from 'react-native';
 
 import { ThemedView } from '@/components/themed-view';
+import { useTheme } from '@/hooks/use-theme';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { OrgProvider } from '@/lib/org-context';
 
@@ -13,11 +14,12 @@ import { OrgProvider } from '@/lib/org-context';
  */
 function Gate() {
   const { loading } = useAuth();
+  const theme = useTheme();
 
   if (loading) {
     return (
       <ThemedView style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator />
+        <ActivityIndicator color={theme.tint} />
       </ThemedView>
     );
   }
