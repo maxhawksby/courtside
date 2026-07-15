@@ -1,12 +1,14 @@
 import { useCallback, useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { isMinor, type PersonRow } from '@courtside/shared';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { PrimaryButton } from '@/components/ui/primary-button';
 import { SegmentedControl } from '@/components/ui/segmented-control';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing, TouchTarget } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { listPersons } from '@/lib/data';
 import { useOrg } from '@/lib/org-context';
@@ -14,6 +16,12 @@ import { useOrg } from '@/lib/org-context';
 import { EmptyState } from '@/features/directory/empty-state';
 import { PersonListRow } from '@/features/directory/person-list-row';
 import { useDebouncedValue } from '@/features/directory/use-debounced-value';
+
+// Entrance cascade (DESIGN.md §4: one orchestrated entrance per screen).
+// No motion tokens exist yet — flagged in DESIGN.md §5.
+const ENTRANCE_STAGGER_MS = 40;
+const ENTRANCE_DURATION_MS = 250;
+const ENTRANCE_STAGGER_CAP = 12;
 
 type PersonFilter = 'all' | 'players' | 'adults';
 
@@ -96,7 +104,7 @@ export default function DirectoryIndexScreen() {
         options={{
           title: 'Directory',
           headerRight: () => (
-            <Pressable onPress={() => router.push('/directory/new')} hitSlop={8}>
+            <Pressable onPress={() => router.push('/directory/new')} hitSlop={12}>
               <ThemedText type="linkPrimary">Add person</ThemedText>
             </Pressable>
           ),
@@ -110,7 +118,7 @@ export default function DirectoryIndexScreen() {
         placeholderTextColor={theme.textSecondary}
         style={[
           styles.searchInput,
-          { color: theme.text, backgroundColor: theme.backgroundElement },
+          { color: theme.text, backgroundColor: theme.backgroundElement, borderColor: theme.border },
         ]}
         autoCapitalize="words"
         autoCorrect={false}
@@ -122,7 +130,10 @@ export default function DirectoryIndexScreen() {
         <Pressable
           onPress={() => router.push('/households')}
           hitSlop={8}
-          style={[styles.householdsButton, { backgroundColor: theme.backgroundElement }]}>
+          style={[
+            styles.householdsButton,
+            { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+          ]}>
           <ThemedText type="small" themeColor="textSecondary">
             Households →
           </ThemedText>
@@ -132,6 +143,7 @@ export default function DirectoryIndexScreen() {
       {error ? (
         <ThemedView style={styles.centered}>
           <ThemedText themeColor="textSecondary">{error}</ThemedText>
+          <PrimaryButton label="Try again" onPress={() => void load()} />
         </ThemedView>
       ) : loading ? (
         <ThemedView style={styles.centered}>
@@ -158,8 +170,13 @@ export default function DirectoryIndexScreen() {
           data={filteredPersons}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
-          renderItem={({ item }) => (
-            <PersonListRow person={item} onPress={() => router.push(`/directory/${item.id}`)} />
+          renderItem={({ item, index }) => (
+            <Animated.View
+              entering={FadeInDown.delay(Math.min(index, ENTRANCE_STAGGER_CAP) * ENTRANCE_STAGGER_MS).duration(
+                ENTRANCE_DURATION_MS,
+              )}>
+              <PersonListRow person={item} onPress={() => router.push(`/directory/${item.id}`)} />
+            </Animated.View>
           )}
         />
       )}
@@ -184,9 +201,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   searchInput: {
-    borderRadius: Spacing.three,
+    borderRadius: Radius.input,
+    borderWidth: StyleSheet.hairlineWidth,
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
+    minHeight: TouchTarget.minimum,
     fontSize: 16,
     marginBottom: Spacing.three,
   },
@@ -201,7 +220,10 @@ const styles = StyleSheet.create({
   householdsButton: {
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
-    borderRadius: Spacing.two,
+    borderRadius: Radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    minHeight: TouchTarget.minimum,
+    justifyContent: 'center',
   },
   listContent: {
     paddingBottom: Spacing.six,

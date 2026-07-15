@@ -5,13 +5,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Brand, Spacing } from '@/constants/theme';
+import { Radius, Spacing, TouchTarget } from '@/constants/theme';
 import { AddToRosterPanel } from '@/features/teams/components/add-to-roster-panel';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PrimaryButton } from '@/components/ui/primary-button';
 import { buildIcs } from '@/features/events/ics';
 import { shareIcs } from '@/features/events/share-ics';
 import { RosterRow } from '@/features/teams/components/roster-row';
+import { useTheme } from '@/hooks/use-theme';
 import {
   archiveTeam,
   createSeason,
@@ -39,6 +40,7 @@ const DEFAULT_SEASON_NAME = '2026-27';
 export default function TeamDetailScreen() {
   const { teamId } = useLocalSearchParams<{ teamId: string }>();
   const router = useRouter();
+  const theme = useTheme();
   const { activeOrg } = useOrg();
 
   const [team, setTeam] = useState<TeamWithDivision | null>(null);
@@ -200,6 +202,7 @@ export default function TeamDetailScreen() {
         <ThemedText type="small" themeColor="textSecondary">
           {error ?? 'Team not found'}
         </ThemedText>
+        {error ? <PrimaryButton label="Try again" onPress={() => void load()} /> : null}
       </ThemedView>
     );
   }
@@ -217,7 +220,9 @@ export default function TeamDetailScreen() {
         </View>
 
         {archived && (
-          <ThemedView type="backgroundElement" style={styles.archivedBanner}>
+          <ThemedView
+            type="backgroundElement"
+            style={[styles.archivedBanner, { borderColor: theme.border }]}>
             <View style={styles.archivedBannerText}>
               <ThemedText type="smallBold">Archived</ThemedText>
               <ThemedText type="small" themeColor="textSecondary">
@@ -296,11 +301,15 @@ export default function TeamDetailScreen() {
 
         {canManageTeam && !archived && (
           <View style={styles.dangerSection}>
-            <Pressable onPress={handleArchive} disabled={archiveBusy} hitSlop={8}>
+            <Pressable
+              onPress={handleArchive}
+              disabled={archiveBusy}
+              hitSlop={12}
+              style={styles.archiveTapTarget}>
               {archiveBusy ? (
                 <ActivityIndicator />
               ) : (
-                <ThemedText type="small" style={styles.archiveText}>
+                <ThemedText type="smallBold" style={{ color: theme.danger }}>
                   Archive team
                 </ThemedText>
               )}
@@ -344,12 +353,13 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     marginTop: Spacing.four,
   },
-  archiveText: {
-    color: Brand.danger,
-    fontWeight: '600',
+  archiveTapTarget: {
+    minHeight: TouchTarget.minimum,
+    justifyContent: 'center',
   },
   archivedBanner: {
-    borderRadius: Spacing.two,
+    borderRadius: Radius.card,
+    borderWidth: StyleSheet.hairlineWidth,
     padding: Spacing.three,
     gap: Spacing.three,
   },
@@ -360,5 +370,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: Spacing.three,
+    paddingHorizontal: Spacing.four,
   },
 });

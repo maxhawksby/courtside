@@ -2,7 +2,8 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing, TouchTarget } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import type { HouseholdWithMembers } from '@/lib/data';
 
 type HouseholdCardProps = {
@@ -12,11 +13,12 @@ type HouseholdCardProps = {
 
 /** Household summary card — index list row. Owner members get a star prefix. */
 export function HouseholdCard({ household, onPress }: HouseholdCardProps) {
+  const theme = useTheme();
   const members = household.household_members.filter((m) => m.persons);
 
   return (
     <Pressable onPress={onPress} style={({ pressed }) => pressed && styles.pressed}>
-      <ThemedView type="backgroundElement" style={styles.card}>
+      <ThemedView type="backgroundElement" style={[styles.card, { borderColor: theme.border }]}>
         <ThemedText type="default">{household.name}</ThemedText>
         {members.length === 0 ? (
           <ThemedText type="small" themeColor="textSecondary">
@@ -41,9 +43,11 @@ export function HouseholdCard({ household, onPress }: HouseholdCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: Spacing.three,
+    borderRadius: Radius.card,
+    borderWidth: StyleSheet.hairlineWidth,
     padding: Spacing.three,
     gap: Spacing.two,
+    minHeight: TouchTarget.minimum,
   },
   pressed: {
     opacity: 0.7,
@@ -54,7 +58,7 @@ const styles = StyleSheet.create({
     gap: Spacing.one,
   },
   chip: {
-    borderRadius: Spacing.two,
+    borderRadius: Radius.pill,
     paddingHorizontal: Spacing.two,
     paddingVertical: Spacing.half,
   },

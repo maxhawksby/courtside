@@ -4,7 +4,7 @@ import { ActivityIndicator, ScrollView, StyleSheet, Switch, TextInput, View } fr
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing, TouchTarget } from '@/constants/theme';
 import { PrimaryButton } from '@/components/ui/primary-button';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { MemberRow } from '@/features/messaging/components/member-row';
@@ -224,7 +224,7 @@ export default function NewChannelScreen() {
           onChangeText={setQuery}
           placeholder="Search by name"
           placeholderTextColor={theme.textSecondary}
-          style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
+          style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement, borderColor: theme.border }]}
           autoCapitalize="words"
           autoCorrect={false}
         />
@@ -266,7 +266,7 @@ export default function NewChannelScreen() {
                 onChangeText={setName}
                 placeholder="e.g. Varsity Boys — Team Chat"
                 placeholderTextColor={theme.textSecondary}
-                style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
+                style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement, borderColor: theme.border }]}
               />
             </View>
 
@@ -343,9 +343,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
   },
   input: {
-    borderRadius: Spacing.two,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.input,
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
+    minHeight: TouchTarget.minimum,
     fontSize: 16,
   },
   section: {

@@ -2,7 +2,8 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing, TouchTarget } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import type { EventRow } from '@courtside/shared';
 
 import { EVENT_TYPE_LABELS, formatTime } from '../format';
@@ -13,9 +14,10 @@ type EventListRowProps = {
 };
 
 export function EventListRow({ event, onPress }: EventListRowProps) {
+  const theme = useTheme();
   return (
     <Pressable onPress={onPress} style={({ pressed }) => pressed && styles.pressed}>
-      <ThemedView type="backgroundElement" style={styles.row}>
+      <ThemedView type="backgroundElement" style={[styles.row, { borderColor: theme.border }]}>
         <View style={styles.timeCol}>
           <ThemedText type="small" themeColor="textSecondary">
             {formatTime(event.starts_at)}
@@ -38,9 +40,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: Spacing.three,
     alignItems: 'center',
-    borderRadius: Spacing.two,
+    borderRadius: Radius.card,
+    borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.three,
+    minHeight: TouchTarget.minimum,
   },
   timeCol: {
     width: 72,

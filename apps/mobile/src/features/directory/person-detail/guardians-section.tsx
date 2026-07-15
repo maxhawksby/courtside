@@ -4,7 +4,8 @@ import { useRouter } from 'expo-router';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing, TouchTarget } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import type { GuardianshipWithPersons } from '@/lib/data';
 
 import { InviteParentSheet } from '@/features/directory/invite-parent-sheet';
@@ -32,6 +33,7 @@ export function GuardiansSection({
   onChanged,
 }: GuardiansSectionProps) {
   const router = useRouter();
+  const theme = useTheme();
   const [linkVisible, setLinkVisible] = useState(false);
   const [inviteVisible, setInviteVisible] = useState(false);
 
@@ -41,10 +43,10 @@ export function GuardiansSection({
   return (
     <>
       <View style={styles.actionsRow}>
-        <Pressable onPress={() => setLinkVisible(true)} hitSlop={4}>
+        <Pressable onPress={() => setLinkVisible(true)} hitSlop={12} style={styles.tapTarget}>
           <ThemedText type="linkPrimary">Link guardian</ThemedText>
         </Pressable>
-        <Pressable onPress={() => setInviteVisible(true)} hitSlop={4}>
+        <Pressable onPress={() => setInviteVisible(true)} hitSlop={12} style={styles.tapTarget}>
           <ThemedText type="linkPrimary">Invite as parent</ThemedText>
         </Pressable>
       </View>
@@ -61,7 +63,7 @@ export function GuardiansSection({
               key={r.id}
               onPress={() => router.push(`/directory/${r.guardian!.id}`)}
               hitSlop={4}>
-              <ThemedView type="backgroundElement" style={styles.relRow}>
+              <ThemedView type="backgroundElement" style={[styles.relRow, { borderColor: theme.border }]}>
                 <ThemedText>
                   {r.guardian!.first_name} {r.guardian!.last_name}
                 </ThemedText>
@@ -88,7 +90,7 @@ export function GuardiansSection({
               key={r.id}
               onPress={() => router.push(`/directory/${r.player!.id}`)}
               hitSlop={4}>
-              <ThemedView type="backgroundElement" style={styles.relRow}>
+              <ThemedView type="backgroundElement" style={[styles.relRow, { borderColor: theme.border }]}>
                 <ThemedText>
                   {r.player!.first_name} {r.player!.last_name}
                 </ThemedText>
@@ -127,13 +129,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: Spacing.four,
   },
+  tapTarget: {
+    minHeight: TouchTarget.minimum,
+    justifyContent: 'center',
+  },
   section: {
     gap: Spacing.two,
   },
   relRow: {
-    borderRadius: Spacing.two,
+    borderRadius: Radius.card,
+    borderWidth: StyleSheet.hairlineWidth,
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
+    minHeight: TouchTarget.minimum,
+    justifyContent: 'center',
     gap: Spacing.half,
   },
 });

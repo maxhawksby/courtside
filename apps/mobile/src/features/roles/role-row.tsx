@@ -2,7 +2,8 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing, TouchTarget } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import type { OrgRoleWithPerson } from '@/lib/data';
 
 import { ROLE_LABELS } from './role-labels';
@@ -15,11 +16,12 @@ type RoleRowProps = {
 
 /** Owner rows have no revoke affordance — de-owning the org is out of scope (see roles.ts). */
 export function RoleRow({ role, scopeLabel, onRevoke }: RoleRowProps) {
+  const theme = useTheme();
   const person = role.user_profiles?.persons ?? null;
   const name = person ? `${person.first_name} ${person.last_name}` : 'Unlinked member';
 
   return (
-    <ThemedView type="backgroundElement" style={styles.row}>
+    <ThemedView type="backgroundElement" style={[styles.row, { borderColor: theme.border }]}>
       <View style={styles.info}>
         <ThemedText type="default">{name}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
@@ -27,8 +29,8 @@ export function RoleRow({ role, scopeLabel, onRevoke }: RoleRowProps) {
         </ThemedText>
       </View>
       {role.role !== 'owner' && (
-        <Pressable onPress={onRevoke} hitSlop={8}>
-          <ThemedText type="link" themeColor="textSecondary">
+        <Pressable onPress={onRevoke} hitSlop={12} style={styles.tapTarget}>
+          <ThemedText type="link" style={{ color: theme.danger }}>
             Revoke
           </ThemedText>
         </Pressable>
@@ -43,9 +45,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: Spacing.three,
-    borderRadius: Spacing.two,
+    borderRadius: Radius.card,
+    borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.three,
+    minHeight: TouchTarget.minimum,
+  },
+  tapTarget: {
+    minHeight: TouchTarget.minimum,
+    justifyContent: 'center',
   },
   info: {
     gap: Spacing.half,

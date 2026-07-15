@@ -4,7 +4,8 @@ import type { PersonRow } from '@courtside/shared';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing, TouchTarget } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { addHouseholdMember } from '@/lib/data';
 
 import { PersonPicker } from '@/features/directory/person-picker';
@@ -24,6 +25,7 @@ export function AddMemberSection({
   existingMemberIds,
   onAdded,
 }: AddMemberSectionProps) {
+  const theme = useTheme();
   const [isOwner, setIsOwner] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,13 +47,15 @@ export function AddMemberSection({
   return (
     <ThemedView style={styles.wrap}>
       <Pressable onPress={() => setIsOwner((v) => !v)} hitSlop={4}>
-        <ThemedView type={isOwner ? 'backgroundSelected' : 'backgroundElement'} style={styles.toggle}>
+        <ThemedView
+          type={isOwner ? 'backgroundSelected' : 'backgroundElement'}
+          style={[styles.toggle, { borderColor: theme.border }]}>
           <ThemedText type="small">{isOwner ? '☑' : '☐'} Add as household owner</ThemedText>
         </ThemedView>
       </Pressable>
 
       {error ? (
-        <ThemedText type="small" themeColor="text">
+        <ThemedText type="small" style={{ color: theme.danger }}>
           {error}
         </ThemedText>
       ) : null}
@@ -74,9 +78,12 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   toggle: {
-    borderRadius: Spacing.two,
+    borderRadius: Radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
+    minHeight: TouchTarget.minimum,
+    justifyContent: 'center',
     alignSelf: 'flex-start',
   },
   submitting: {

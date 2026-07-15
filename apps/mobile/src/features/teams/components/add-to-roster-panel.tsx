@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing, TouchTarget } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { addToRoster, createPerson, listPersons } from '@/lib/data';
 import type { PersonRow, RosterMembershipRow } from '@courtside/shared';
@@ -90,10 +90,10 @@ export function AddToRosterPanel({ orgId, teamSeasonId, onAdded, onClose }: AddT
   };
 
   return (
-    <ThemedView type="backgroundElement" style={styles.panel}>
+    <ThemedView type="backgroundElement" style={[styles.panel, { borderColor: theme.border }]}>
       <View style={styles.headerRow}>
         <ThemedText type="smallBold">Add to roster</ThemedText>
-        <Pressable onPress={onClose}>
+        <Pressable onPress={onClose} hitSlop={12} style={styles.closeTapTarget}>
           <ThemedText type="small" themeColor="textSecondary">
             Close
           </ThemedText>
@@ -110,13 +110,15 @@ export function AddToRosterPanel({ orgId, teamSeasonId, onAdded, onClose }: AddT
             onChangeText={setSearch}
             placeholder="First or last name"
             placeholderTextColor={theme.textSecondary}
-            style={[styles.input, { color: theme.text, borderColor: theme.backgroundSelected }]}
+            style={[styles.input, { color: theme.text, borderColor: theme.border }]}
           />
           {searching && <ActivityIndicator />}
           {!searching &&
             results.map((person) => (
-              <Pressable key={person.id} onPress={() => setSelectedPerson(person)}>
-                <ThemedView type="backgroundSelected" style={styles.resultRow}>
+              <Pressable key={person.id} onPress={() => setSelectedPerson(person)} hitSlop={4}>
+                <ThemedView
+                  type="backgroundSelected"
+                  style={[styles.resultRow, { borderColor: theme.border }]}>
                   <ThemedText type="small">
                     {person.first_name} {person.last_name}
                   </ThemedText>
@@ -140,14 +142,14 @@ export function AddToRosterPanel({ orgId, teamSeasonId, onAdded, onClose }: AddT
               onChangeText={setFirstName}
               placeholder="First name"
               placeholderTextColor={theme.textSecondary}
-              style={[styles.input, styles.nameInput, { color: theme.text, borderColor: theme.backgroundSelected }]}
+              style={[styles.input, styles.nameInput, { color: theme.text, borderColor: theme.border }]}
             />
             <TextInput
               value={lastName}
               onChangeText={setLastName}
               placeholder="Last name"
               placeholderTextColor={theme.textSecondary}
-              style={[styles.input, styles.nameInput, { color: theme.text, borderColor: theme.backgroundSelected }]}
+              style={[styles.input, styles.nameInput, { color: theme.text, borderColor: theme.border }]}
             />
           </View>
         </View>
@@ -164,7 +166,8 @@ export function AddToRosterPanel({ orgId, teamSeasonId, onAdded, onClose }: AddT
               // spinner while the (re-run) fetch is in flight, as before.
               setSettledSearchKey(null);
               setSelectedPerson(null);
-            }}>
+            }}
+            hitSlop={8}>
             <ThemedText type="link" themeColor="textSecondary">
               Change person
             </ThemedText>
@@ -189,12 +192,12 @@ export function AddToRosterPanel({ orgId, teamSeasonId, onAdded, onClose }: AddT
           placeholder="e.g. 23"
           placeholderTextColor={theme.textSecondary}
           keyboardType="number-pad"
-          style={[styles.input, { color: theme.text, borderColor: theme.backgroundSelected }]}
+          style={[styles.input, { color: theme.text, borderColor: theme.border }]}
         />
       </View>
 
       {error && (
-        <ThemedText type="small" themeColor="text">
+        <ThemedText type="small" themeColor="danger">
           {error}
         </ThemedText>
       )}
@@ -211,7 +214,8 @@ export function AddToRosterPanel({ orgId, teamSeasonId, onAdded, onClose }: AddT
 const styles = StyleSheet.create({
   panel: {
     gap: Spacing.three,
-    borderRadius: Spacing.three,
+    borderRadius: Radius.card,
+    borderWidth: StyleSheet.hairlineWidth,
     padding: Spacing.four,
   },
   headerRow: {
@@ -219,15 +223,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  closeTapTarget: {
+    minHeight: TouchTarget.minimum,
+    justifyContent: 'center',
+  },
   section: {
     gap: Spacing.two,
   },
   input: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: Spacing.two,
+    borderRadius: Radius.input,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
-    fontSize: 14,
+    minHeight: TouchTarget.minimum,
+    fontSize: 15,
   },
   nameRow: {
     flexDirection: 'row',
@@ -237,9 +246,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   resultRow: {
-    borderRadius: Spacing.two,
+    borderRadius: Radius.card,
+    borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
+    minHeight: TouchTarget.minimum,
+    justifyContent: 'center',
   },
   divider: {
     height: Spacing.two,

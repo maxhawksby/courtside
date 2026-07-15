@@ -23,7 +23,7 @@ export function EmptyState({ title, subtitle, actionLabel, onAction }: EmptyStat
         </ThemedText>
       ) : null}
       {actionLabel && onAction ? (
-        <Pressable onPress={onAction} hitSlop={8}>
+        <Pressable onPress={onAction} hitSlop={12}>
           <ThemedText type="linkPrimary">{actionLabel}</ThemedText>
         </Pressable>
       ) : null}

@@ -3,16 +3,24 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View }
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import Animated, { FadeInDown } from 'react-native-reanimated';
+
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PrimaryButton } from '@/components/ui/primary-button';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing, TouchTarget } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { createHousehold, listHouseholds, type HouseholdWithMembers } from '@/lib/data';
 import { useOrg } from '@/lib/org-context';
 
 import { HouseholdCard } from '@/features/households/household-card';
+
+// Entrance cascade (DESIGN.md §4: one orchestrated entrance per screen).
+// No motion tokens exist yet — flagged in DESIGN.md §5.
+const ENTRANCE_STAGGER_MS = 40;
+const ENTRANCE_DURATION_MS = 250;
+const ENTRANCE_STAGGER_CAP = 12;
 
 export default function HouseholdsIndexScreen() {
   const router = useRouter();
@@ -98,17 +106,17 @@ export default function HouseholdsIndexScreen() {
         </View>
 
         {showCreateForm && (
-          <ThemedView type="backgroundElement" style={styles.createForm}>
+          <ThemedView type="backgroundElement" style={[styles.createForm, { borderColor: theme.border }]}>
             <TextInput
               value={name}
               onChangeText={setName}
               placeholder="Household name, e.g. The Smith Family"
               placeholderTextColor={theme.textSecondary}
-              style={[styles.input, { color: theme.text, borderColor: theme.backgroundSelected }]}
+              style={[styles.input, { color: theme.text, borderColor: theme.border }]}
               autoCapitalize="words"
             />
             {createError ? (
-              <ThemedText type="small" themeColor="text">
+              <ThemedText type="small" style={{ color: theme.danger }}>
                 {createError}
               </ThemedText>
             ) : null}
@@ -119,7 +127,8 @@ export default function HouseholdsIndexScreen() {
                   setName('');
                   setCreateError(null);
                 }}
-                hitSlop={4}>
+                hitSlop={12}
+                style={styles.cancelTapTarget}>
                 <ThemedText type="link" themeColor="textSecondary">
                   Cancel
                 </ThemedText>
@@ -140,9 +149,17 @@ export default function HouseholdsIndexScreen() {
         )}
 
         {!loading && error && (
-          <ThemedText type="small" themeColor="text">
-            {error}
-          </ThemedText>
+          <ThemedView
+            type="backgroundElement"
+            style={[styles.errorCard, { borderColor: theme.border }]}>
+            <ThemedText type="smallBold" style={{ color: theme.danger }}>
+              Couldn&apos;t load households
+            </ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              {error}
+            </ThemedText>
+            <PrimaryButton label="Try again" onPress={() => void load()} />
+          </ThemedView>
         )}
 
         {!loading && !error && households.length === 0 && !showCreateForm && (
@@ -154,12 +171,17 @@ export default function HouseholdsIndexScreen() {
 
         {!loading && !error && households.length > 0 && (
           <View style={styles.list}>
-            {households.map((household) => (
-              <HouseholdCard
+            {households.map((household, index) => (
+              <Animated.View
                 key={household.id}
-                household={household}
-                onPress={() => router.push(`/households/${household.id}`)}
-              />
+                entering={FadeInDown.delay(
+                  Math.min(index, ENTRANCE_STAGGER_CAP) * ENTRANCE_STAGGER_MS,
+                ).duration(ENTRANCE_DURATION_MS)}>
+                <HouseholdCard
+                  household={household}
+                  onPress={() => router.push(`/households/${household.id}`)}
+                />
+              </Animated.View>
             ))}
           </View>
         )}
@@ -188,22 +210,35 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.five,
   },
   createForm: {
-    borderRadius: Spacing.three,
+    borderRadius: Radius.card,
+    borderWidth: StyleSheet.hairlineWidth,
     padding: Spacing.three,
     gap: Spacing.two,
   },
   input: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: Spacing.two,
+    borderRadius: Radius.input,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.three,
+    minHeight: TouchTarget.minimum,
     fontSize: 16,
+  },
+  cancelTapTarget: {
+    minHeight: TouchTarget.minimum,
+    justifyContent: 'center',
   },
   createActions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     alignItems: 'center',
     gap: Spacing.three,
+  },
+  errorCard: {
+    gap: Spacing.two,
+    borderRadius: Radius.card,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: Spacing.four,
+    alignItems: 'flex-start',
   },
   list: {
     gap: Spacing.two,

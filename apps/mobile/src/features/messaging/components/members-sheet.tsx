@@ -2,7 +2,8 @@ import { Modal, Pressable, ScrollView, StyleSheet } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing, TouchTarget } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import type { ChannelMemberWithPerson } from '@/lib/data';
 
 function displayName(member: ChannelMemberWithPerson): string {
@@ -19,19 +20,23 @@ type MembersSheetProps = {
 };
 
 export function MembersSheet({ visible, onClose, members, myUserId }: MembersSheetProps) {
+  const theme = useTheme();
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <ThemedView style={styles.sheet}>
         <ThemedView style={styles.sheetHeader}>
           <ThemedText type="subtitle">Members</ThemedText>
-          <Pressable onPress={onClose} hitSlop={8}>
+          <Pressable onPress={onClose} hitSlop={12} style={styles.tapTarget}>
             <ThemedText type="link">Close</ThemedText>
           </Pressable>
         </ThemedView>
 
         <ScrollView contentContainerStyle={styles.list}>
           {members.map((member) => (
-            <ThemedView key={member.user_id} type="backgroundElement" style={styles.row}>
+            <ThemedView
+              key={member.user_id}
+              type="backgroundElement"
+              style={[styles.row, { borderColor: theme.border }]}>
               <ThemedText>{displayName(member)}</ThemedText>
               {member.user_id === myUserId ? (
                 <ThemedText type="small" themeColor="textSecondary">
@@ -57,6 +62,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  tapTarget: {
+    minHeight: TouchTarget.minimum,
+    justifyContent: 'center',
+  },
   list: {
     gap: Spacing.two,
   },
@@ -64,8 +73,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderRadius: Spacing.two,
+    borderRadius: Radius.card,
+    borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.three,
+    minHeight: TouchTarget.minimum,
   },
 });

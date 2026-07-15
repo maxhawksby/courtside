@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
+import { ScrollView, StyleSheet, TextInput } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { PrimaryButton } from '@/components/ui/primary-button';
+import { Radius, Spacing, TouchTarget } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { createPerson } from '@/lib/data';
 import { useOrg } from '@/lib/org-context';
@@ -70,7 +71,7 @@ export default function NewPersonScreen() {
           <TextInput
             value={firstName}
             onChangeText={setFirstName}
-            style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
+            style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement, borderColor: theme.border }]}
             autoCapitalize="words"
           />
         </ThemedView>
@@ -80,7 +81,7 @@ export default function NewPersonScreen() {
           <TextInput
             value={lastName}
             onChangeText={setLastName}
-            style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
+            style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement, borderColor: theme.border }]}
             autoCapitalize="words"
           />
         </ThemedView>
@@ -92,7 +93,7 @@ export default function NewPersonScreen() {
             onChangeText={setDob}
             placeholder="YYYY-MM-DD"
             placeholderTextColor={theme.textSecondary}
-            style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
+            style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement, borderColor: theme.border }]}
             keyboardType="numbers-and-punctuation"
           />
           {dobError ? (
@@ -107,7 +108,7 @@ export default function NewPersonScreen() {
           <TextInput
             value={email}
             onChangeText={setEmail}
-            style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
+            style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement, borderColor: theme.border }]}
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
@@ -119,7 +120,7 @@ export default function NewPersonScreen() {
           <TextInput
             value={phone}
             onChangeText={setPhone}
-            style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
+            style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement, borderColor: theme.border }]}
             keyboardType="phone-pad"
           />
         </ThemedView>
@@ -130,13 +131,11 @@ export default function NewPersonScreen() {
           </ThemedText>
         ) : null}
 
-        <Pressable onPress={handleSubmit} disabled={!canSubmit} hitSlop={4}>
-          <ThemedView
-            type={canSubmit ? 'backgroundSelected' : 'backgroundElement'}
-            style={styles.submitButton}>
-            <ThemedText type="linkPrimary">{submitting ? 'Saving…' : 'Add person'}</ThemedText>
-          </ThemedView>
-        </Pressable>
+        <PrimaryButton
+          label={submitting ? 'Saving…' : 'Add person'}
+          onPress={handleSubmit}
+          disabled={!canSubmit}
+        />
       </ScrollView>
     </ThemedView>
   );
@@ -160,15 +159,11 @@ const styles = StyleSheet.create({
     gap: Spacing.one,
   },
   input: {
-    borderRadius: Spacing.two,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.input,
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
+    minHeight: TouchTarget.minimum,
     fontSize: 16,
-  },
-  submitButton: {
-    borderRadius: Spacing.three,
-    paddingVertical: Spacing.three,
-    alignItems: 'center',
-    marginTop: Spacing.two,
   },
 });

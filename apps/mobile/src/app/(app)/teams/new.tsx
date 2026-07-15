@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing, TouchTarget } from '@/constants/theme';
 import { DivisionPicker } from '@/features/teams/components/division-picker';
 import { PrimaryButton } from '@/components/ui/primary-button';
 import { createDivision, createTeam, listDivisions } from '@/lib/data';
@@ -93,7 +93,7 @@ export default function NewTeamScreen() {
             onChangeText={setName}
             placeholder="e.g. Varsity Boys"
             placeholderTextColor={theme.textSecondary}
-            style={[styles.input, { color: theme.text, borderColor: theme.backgroundSelected }]}
+            style={[styles.input, { color: theme.text, borderColor: theme.border }]}
           />
         </View>
 
@@ -114,7 +114,7 @@ export default function NewTeamScreen() {
         </View>
 
         {error && (
-          <ThemedText type="small" themeColor="text">
+          <ThemedText type="small" themeColor="danger">
             {error}
           </ThemedText>
         )}
@@ -142,9 +142,10 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: Spacing.two,
+    borderRadius: Radius.input,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.three,
+    minHeight: TouchTarget.minimum,
     fontSize: 16,
   },
   centered: {

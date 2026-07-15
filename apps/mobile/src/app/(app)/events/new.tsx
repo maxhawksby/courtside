@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing, TouchTarget } from '@/constants/theme';
 import { PrimaryButton } from '@/components/ui/primary-button';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { TeamPicker, type TeamOption } from '@/features/events/components/team-picker';
@@ -161,7 +161,7 @@ export default function NewEventScreen() {
             onChangeText={setTitle}
             placeholder="e.g. vs. Riverside Hawks"
             placeholderTextColor={theme.textSecondary}
-            style={[styles.input, { color: theme.text, borderColor: theme.backgroundSelected }]}
+            style={[styles.input, { color: theme.text, borderColor: theme.border }]}
           />
         </View>
 
@@ -195,7 +195,7 @@ export default function NewEventScreen() {
             placeholderTextColor={theme.textSecondary}
             autoCapitalize="none"
             autoCorrect={false}
-            style={[styles.input, { color: theme.text, borderColor: theme.backgroundSelected }]}
+            style={[styles.input, { color: theme.text, borderColor: theme.border }]}
           />
         </View>
 
@@ -210,7 +210,7 @@ export default function NewEventScreen() {
             placeholderTextColor={theme.textSecondary}
             autoCapitalize="none"
             autoCorrect={false}
-            style={[styles.input, { color: theme.text, borderColor: theme.backgroundSelected }]}
+            style={[styles.input, { color: theme.text, borderColor: theme.border }]}
           />
         </View>
 
@@ -225,7 +225,7 @@ export default function NewEventScreen() {
             placeholderTextColor={theme.textSecondary}
             autoCapitalize="none"
             autoCorrect={false}
-            style={[styles.input, { color: theme.text, borderColor: theme.backgroundSelected }]}
+            style={[styles.input, { color: theme.text, borderColor: theme.border }]}
           />
         </View>
 
@@ -238,7 +238,7 @@ export default function NewEventScreen() {
             onChangeText={setLocation}
             placeholder="e.g. Main Gym"
             placeholderTextColor={theme.textSecondary}
-            style={[styles.input, { color: theme.text, borderColor: theme.backgroundSelected }]}
+            style={[styles.input, { color: theme.text, borderColor: theme.border }]}
           />
         </View>
 
@@ -252,12 +252,12 @@ export default function NewEventScreen() {
             placeholder="Anything the team should know"
             placeholderTextColor={theme.textSecondary}
             multiline
-            style={[styles.input, styles.notesInput, { color: theme.text, borderColor: theme.backgroundSelected }]}
+            style={[styles.input, styles.notesInput, { color: theme.text, borderColor: theme.border }]}
           />
         </View>
 
         {error && (
-          <ThemedText type="small" themeColor="text">
+          <ThemedText type="small" themeColor="danger">
             {error}
           </ThemedText>
         )}
@@ -285,9 +285,10 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: Spacing.two,
+    borderRadius: Radius.input,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.three,
+    minHeight: TouchTarget.minimum,
     fontSize: 16,
   },
   notesInput: {
