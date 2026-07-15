@@ -1,6 +1,6 @@
 import { Platform, StyleSheet, Text, type TextProps } from 'react-native';
 
-import { Brand, Fonts, ThemeColor } from '@/constants/theme';
+import { Fonts, ThemeColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export type ThemedTextProps = TextProps & {
@@ -8,13 +8,16 @@ export type ThemedTextProps = TextProps & {
   themeColor?: ThemeColor;
 };
 
+const LINK_TYPES = new Set(['link', 'linkPrimary']);
+
 export function ThemedText({ style, type = 'default', themeColor, ...rest }: ThemedTextProps) {
   const theme = useTheme();
+  const color = theme[themeColor ?? (LINK_TYPES.has(type) ? 'tint' : 'text')];
 
   return (
     <Text
       style={[
-        { color: theme[themeColor ?? 'text'] },
+        { color },
         type === 'default' && styles.default,
         type === 'title' && styles.title,
         type === 'small' && styles.small,
@@ -32,38 +35,39 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
 
 const styles = StyleSheet.create({
   small: {
-    fontSize: 14,
+    fontSize: 15,
     lineHeight: 20,
     fontWeight: 500,
   },
   smallBold: {
-    fontSize: 14,
+    fontSize: 15,
     lineHeight: 20,
     fontWeight: 700,
   },
   default: {
-    fontSize: 16,
+    fontSize: 17,
     lineHeight: 24,
-    fontWeight: 500,
+    fontWeight: 400,
   },
   title: {
     fontSize: 48,
-    fontWeight: 600,
     lineHeight: 52,
+    fontWeight: 800,
+    fontFamily: Fonts.rounded,
   },
   subtitle: {
     fontSize: 32,
-    lineHeight: 44,
-    fontWeight: 600,
+    lineHeight: 40,
+    fontWeight: 700,
+    fontFamily: Fonts.rounded,
   },
   link: {
-    lineHeight: 30,
-    fontSize: 14,
+    fontSize: 17,
+    lineHeight: 24,
   },
   linkPrimary: {
-    lineHeight: 30,
-    fontSize: 14,
-    color: Brand.link,
+    fontSize: 17,
+    lineHeight: 24,
   },
   code: {
     fontFamily: Fonts.mono,
