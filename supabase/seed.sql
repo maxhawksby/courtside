@@ -131,3 +131,63 @@ values
   ('00000000-0000-4000-8000-000000070002', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000402', 'Cedar Valley Boys 2', true, false, null, now()),
   ('00000000-0000-4000-8000-000000070003', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000403', 'Cedar Valley Girls 1', true, false, null, now()),
   ('00000000-0000-4000-8000-000000070004', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000404', 'Cedar Valley Girls 2', true, false, null, now());
+
+-- ============================================================================
+-- Demo auth users (local dev only — password: testing123)
+-- Linked to seeded persons via user_profiles; RLS access granted via org_roles.
+-- "player" is not an org_roles role (13+ player login shape TBD, see BACKLOG);
+-- Bailey (13+) gets the read-only follower role. Under-13 players can never
+-- hold logins (COPPA trigger on user_profiles).
+-- ============================================================================
+
+insert into auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+                        raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+                        confirmation_token, recovery_token, email_change, email_change_token_new)
+values
+  -- Coach Grant Mason (Boys 1, Girls 1)
+  ('00000000-0000-0000-0000-000000000000', '00000000-0000-4000-8000-000000090001', 'authenticated', 'authenticated',
+   'grant.mason@example.com', crypt('testing123', gen_salt('bf')), now(),
+   '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', ''),
+  -- Coach Harper Quinn (Boys 2, Girls 2)
+  ('00000000-0000-0000-0000-000000000000', '00000000-0000-4000-8000-000000090002', 'authenticated', 'authenticated',
+   'harper.quinn@example.com', crypt('testing123', gen_salt('bf')), now(),
+   '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', ''),
+  -- Parent Alice Thompson (guardian of Alex + Grace)
+  ('00000000-0000-0000-0000-000000000000', '00000000-0000-4000-8000-000000090003', 'authenticated', 'authenticated',
+   'alice.thompson@example.com', crypt('testing123', gen_salt('bf')), now(),
+   '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', ''),
+  -- Player Bailey Carter (13+, Boys Team 1)
+  ('00000000-0000-0000-0000-000000000000', '00000000-0000-4000-8000-000000090004', 'authenticated', 'authenticated',
+   'bailey.carter@example.com', crypt('testing123', gen_salt('bf')), now(),
+   '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '');
+
+insert into auth.identities (id, user_id, provider_id, identity_data, provider,
+                             last_sign_in_at, created_at, updated_at)
+select gen_random_uuid(), u.id, u.id::text,
+       jsonb_build_object('sub', u.id::text, 'email', u.email, 'email_verified', true),
+       'email', now(), now(), now()
+from auth.users u
+where u.id in ('00000000-0000-4000-8000-000000090001',
+               '00000000-0000-4000-8000-000000090002',
+               '00000000-0000-4000-8000-000000090003',
+               '00000000-0000-4000-8000-000000090004');
+
+insert into public.user_profiles (user_id, person_id, organization_id, created_at)
+values
+  ('00000000-0000-4000-8000-000000090001', '00000000-0000-4000-8000-000000030001', '00000000-0000-4000-8000-000000000001', now()),
+  ('00000000-0000-4000-8000-000000090002', '00000000-0000-4000-8000-000000030002', '00000000-0000-4000-8000-000000000001', now()),
+  ('00000000-0000-4000-8000-000000090003', '00000000-0000-4000-8000-000000020001', '00000000-0000-4000-8000-000000000001', now()),
+  ('00000000-0000-4000-8000-000000090004', '00000000-0000-4000-8000-000000010002', '00000000-0000-4000-8000-000000000001', now());
+
+insert into public.org_roles (id, organization_id, user_id, role, scope_type, division_id, team_id, created_at)
+values
+  -- Grant: coach of Boys 1 + Girls 1 (team-scoped, matches roster)
+  ('00000000-0000-4000-8000-000000090101', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000090001', 'coach', 'team', null, '00000000-0000-4000-8000-000000000301', now()),
+  ('00000000-0000-4000-8000-000000090102', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000090001', 'coach', 'team', null, '00000000-0000-4000-8000-000000000303', now()),
+  -- Harper: coach of Boys 2 + Girls 2
+  ('00000000-0000-4000-8000-000000090103', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000090002', 'coach', 'team', null, '00000000-0000-4000-8000-000000000302', now()),
+  ('00000000-0000-4000-8000-000000090104', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000090002', 'coach', 'team', null, '00000000-0000-4000-8000-000000000304', now()),
+  -- Alice: parent, org-scoped (guardianships drive per-kid visibility)
+  ('00000000-0000-4000-8000-000000090105', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000090003', 'parent', 'organization', null, null, now()),
+  -- Bailey: 13+ player login — follower until the player role ships
+  ('00000000-0000-4000-8000-000000090106', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000090004', 'follower', 'organization', null, null, now());
