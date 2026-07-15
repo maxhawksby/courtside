@@ -51,6 +51,12 @@ export default function EventsIndexScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Explicit retry-in-flight flag: load()'s first line clears `error`
+  // synchronously, so gating the empty/list branches on `error` alone would
+  // flash "No upcoming events" while a retry is still in flight. `retrying`
+  // sustains the error-card branch (with a disabled "Trying again…" button,
+  // guarding against double-tap) until the retry settles either way.
+  const [retrying, setRetrying] = useState(false);
 
   const load = useCallback(async () => {
     if (!activeOrg) return;
@@ -62,6 +68,11 @@ export default function EventsIndexScreen() {
       setError(e instanceof Error ? e.message : 'Could not load events');
     }
   }, [activeOrg]);
+
+  const handleRetry = useCallback(() => {
+    setRetrying(true);
+    void load().finally(() => setRetrying(false));
+  }, [load]);
 
   // Reload whenever the screen gains focus so events created on pushed
   // screens appear when the user navigates back (Stack keeps this screen
@@ -129,7 +140,7 @@ export default function EventsIndexScreen() {
           </View>
         )}
 
-        {!loading && error && (
+        {!loading && (error || retrying) && (
           <ThemedView
             type="backgroundElement"
             style={[styles.errorCard, { borderColor: theme.border }]}>
@@ -137,13 +148,17 @@ export default function EventsIndexScreen() {
               Couldn&apos;t load events
             </ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              {error}
+              {error ?? 'Trying again…'}
             </ThemedText>
-            <PrimaryButton label="Try again" onPress={() => void load()} />
+            <PrimaryButton
+              label={retrying ? 'Trying again…' : 'Try again'}
+              disabled={retrying}
+              onPress={handleRetry}
+            />
           </ThemedView>
         )}
 
-        {!loading && !error && groups.length === 0 && (
+        {!loading && !error && !retrying && groups.length === 0 && (
           <EmptyState
             title="No upcoming events"
             body="Schedule a game, practice, or general event to start collecting RSVPs."
@@ -152,6 +167,7 @@ export default function EventsIndexScreen() {
 
         {!loading &&
           !error &&
+          !retrying &&
           groups.map((group, groupIndex) => (
             <View key={group.key} style={styles.group}>
               <ThemedText type="small" themeColor="textSecondary">

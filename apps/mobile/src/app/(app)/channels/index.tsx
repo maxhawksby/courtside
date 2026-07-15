@@ -28,6 +28,12 @@ export default function ChannelsIndexScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Explicit retry-in-flight flag: load()'s first line clears `error`
+  // synchronously, so branching on `error` alone would flash "No channels
+  // yet" while a retry is still in flight. `retrying` sustains the error
+  // branch (with a disabled "Trying again…" button, guarding against
+  // double-tap) until the retry settles either way.
+  const [retrying, setRetrying] = useState(false);
 
   const load = useCallback(async () => {
     if (!activeOrg) return;
@@ -39,6 +45,11 @@ export default function ChannelsIndexScreen() {
       setError(e instanceof Error ? e.message : 'Could not load channels');
     }
   }, [activeOrg]);
+
+  const handleRetry = useCallback(() => {
+    setRetrying(true);
+    void load().finally(() => setRetrying(false));
+  }, [load]);
 
   // Focus-based reload: channels created on the pushed "new" screen appear on return.
   useFocusEffect(
@@ -87,10 +98,14 @@ export default function ChannelsIndexScreen() {
         }}
       />
 
-      {error ? (
+      {error || retrying ? (
         <ThemedView style={styles.centered}>
-          <ThemedText themeColor="textSecondary">{error}</ThemedText>
-          <PrimaryButton label="Try again" onPress={() => void load()} />
+          <ThemedText themeColor="textSecondary">{error ?? 'Trying again…'}</ThemedText>
+          <PrimaryButton
+            label={retrying ? 'Trying again…' : 'Try again'}
+            disabled={retrying}
+            onPress={handleRetry}
+          />
         </ThemedView>
       ) : loading ? (
         <ThemedView style={styles.centered}>

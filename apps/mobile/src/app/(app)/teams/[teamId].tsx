@@ -309,7 +309,7 @@ export default function TeamDetailScreen() {
               {archiveBusy ? (
                 <ActivityIndicator />
               ) : (
-                <ThemedText type="small" style={{ color: theme.danger }}>
+                <ThemedText type="smallBold" style={{ color: theme.danger }}>
                   Archive team
                 </ThemedText>
               )}

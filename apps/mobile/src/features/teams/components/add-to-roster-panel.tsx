@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
     minHeight: TouchTarget.minimum,
-    fontSize: 14,
+    fontSize: 15,
   },
   nameRow: {
     flexDirection: 'row',
